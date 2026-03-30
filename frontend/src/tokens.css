@@ -1,0 +1,57 @@
+/* ── Design Tokens (from Figma: Film Dev Guidance — UX/UI · 🎨 Tokens page)
+   https://www.figma.com/design/gM1RfWDE304NV7NOraZQb8/
+   This file is imported in main.tsx AFTER index.css (which contains
+   @import "tailwindcss" + @plugin "daisyui"). Being a separate stylesheet
+   imported later guarantees these rules appear after DaisyUI's injected
+   theme blocks in the final CSS cascade, winning by source order.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* DARK THEME — Figma tokens */
+:root[data-theme=dark],
+[data-theme=dark] {
+  --color-primary:           oklch(62.3% 0.188 259.8);
+  --color-primary-content:   oklch(100% 0 0);
+  --color-secondary:         oklch(58.5% 0.204 277.1);
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent:            oklch(71.5% 0.126 215.2);
+  --color-accent-content:    oklch(100% 0 0);
+  --color-neutral:           oklch(37.3% 0.031 259.7);
+  --color-neutral-content:   oklch(96.7% 0.003 264.5);
+  --color-base-100:          oklch(25.3% 0.016 252.4);
+  --color-base-200:          oklch(23.3% 0.014 253.1);
+  --color-base-300:          oklch(21.1% 0.012 254.1);
+  --color-base-content:      oklch(74.6% 0.022 264.4);
+  --color-success:           oklch(62.7% 0.170 149.2);
+  --color-success-content:   oklch(100% 0 0);
+  --color-warning:           oklch(66.6% 0.157 58.3);
+  --color-warning-content:   oklch(100% 0 0);
+  --color-error:             oklch(57.7% 0.215 27.3);
+  --color-error-content:     oklch(100% 0 0);
+  --color-info:              oklch(68.5% 0.148 237.3);
+  --color-info-content:      oklch(100% 0 0);
+}
+
+/* LIGHT THEME — Figma tokens */
+:root[data-theme=light],
+[data-theme=light] {
+  --color-primary:           oklch(54.6% 0.215 262.9);
+  --color-primary-content:   oklch(100% 0 0);
+  --color-secondary:         oklch(51.1% 0.230 277.0);
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent:            oklch(60.9% 0.111 221.8);
+  --color-accent-content:    oklch(100% 0 0);
+  --color-neutral:           oklch(92.8% 0.006 264.5);
+  --color-neutral-content:   oklch(27.8% 0.030 256.8);
+  --color-base-100:          oklch(100% 0 0);
+  --color-base-200:          oklch(96.7% 0.003 264.5);
+  --color-base-300:          oklch(92.8% 0.006 264.5);
+  --color-base-content:      oklch(27.8% 0.030 256.8);
+  --color-success:           oklch(62.7% 0.170 149.2);
+  --color-success-content:   oklch(100% 0 0);
+  --color-warning:           oklch(66.6% 0.157 58.3);
+  --color-warning-content:   oklch(100% 0 0);
+  --color-error:             oklch(57.7% 0.215 27.3);
+  --color-error-content:     oklch(100% 0 0);
+  --color-info:              oklch(68.5% 0.148 237.3);
+  --color-info-content:      oklch(100% 0 0);
+}

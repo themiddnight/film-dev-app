@@ -1,0 +1,69 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: dark --default, light;
+}
+
+/* ── Design Tokens: see tokens.css (imported after this file in main.tsx) ── */
+
+/* ── Border Radius Tokens (from Figma wireframes)
+   --radius-box:      card, alert, modal, input  → 12px
+   --radius-field:    input field, select, badge → 10px
+   --radius-selector: toggle, checkbox, btn      → 14px
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --radius-box:      0.75rem;   /* 12px — cards, alerts, modals */
+  --radius-field:    0.625rem;  /* 10px — inputs, selects */
+  --radius-selector: 0.875rem;  /* 14px — buttons, toggles */
+}
+
+/* Boost dark mode text contrast — DaisyUI default 74.6% is too dim */
+:root[data-theme="dark"], [data-theme="dark"] {
+  --color-base-content: oklch(92% 0.014 264) !important;
+}
+
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; }
+
+/* Smooth font rendering */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Root fills viewport */
+#root {
+  min-height: 100dvh;
+}
+
+/* Tab-nums for timer display */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ── Bottom Sheet slide animations ──────────────────────────────────────── */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes slideDown {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+
+/* ── Text color utilities — theme-aware
+   text-muted   = placeholder, label, caption, dim UI chrome
+   text-sub     = subtitle, secondary info
+   text-warn-title / text-warn-body = transition warning
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Dark (default) */
+.text-muted      { color: oklch(58% 0.012 255); }   /* ~#828a96 */
+.text-sub        { color: oklch(74% 0.018 255); }   /* ~#b2bac8 */
+
+/* Light */
+[data-theme="light"] .text-muted { color: oklch(44% 0.012 255); }  /* ~#58606c */
+[data-theme="light"] .text-sub   { color: oklch(36% 0.016 255); }  /* ~#404854 */
+
+.text-warn-title { color: #ffc24d; }
+.text-warn-body  { color: #e5b266; }
