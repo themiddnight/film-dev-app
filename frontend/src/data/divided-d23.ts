@@ -23,7 +23,9 @@ export const dividedD23: Recipe = {
     {
       id: 'bath-a',
       name: 'Bath A — Developer',
-      developer_type: 'raw',
+      role: 'developer',
+      chemical_format: 'raw_powder',
+      mixing_required: true,
       chemicals: [
         {
           name: 'Sodium Sulphite',
@@ -66,7 +68,9 @@ export const dividedD23: Recipe = {
     {
       id: 'bath-b',
       name: 'Bath B — Activator',
-      developer_type: 'raw',
+      role: 'developer',
+      chemical_format: 'raw_powder',
+      mixing_required: true,
       chemicals: [
         {
           name: 'Borax',
@@ -96,7 +100,9 @@ export const dividedD23: Recipe = {
     {
       id: 'stop-bath',
       name: 'Stop Bath',
-      developer_type: 'raw',
+      role: 'stop',
+      chemical_format: 'raw_powder',
+      mixing_required: true,
       chemicals: [
         {
           name: 'Potassium Metabisulphite',
@@ -123,7 +129,9 @@ export const dividedD23: Recipe = {
     {
       id: 'fixer',
       name: 'Fixer',
-      developer_type: 'raw',
+      role: 'fixer',
+      chemical_format: 'raw_powder',
+      mixing_required: true,
       chemicals: [
         {
           name: 'Sodium Thiosulphate (Hypo)',
@@ -169,6 +177,7 @@ export const dividedD23: Recipe = {
       id: 'bath-a-dev',
       name: 'Bath A — Developer',
       type: 'developer',
+      bath_ref: 'bath-a',
       duration_seconds: 210,  // default 3:30 @ 26°C, N — overridden by temp_table
       duration_override_key: 'divided-d23.bath-a.duration',
       agitation: {
@@ -194,6 +203,7 @@ export const dividedD23: Recipe = {
       id: 'bath-b-act',
       name: 'Bath B — Activator',
       type: 'activator',
+      bath_ref: 'bath-b',
       duration_seconds: 300,  // 5:00 — คงที่เสมอ ไม่ขึ้นกับอุณหภูมิ
       agitation: {
         initial_seconds: 30,
@@ -218,6 +228,7 @@ export const dividedD23: Recipe = {
       id: 'stop-bath-dev',
       name: 'Stop Bath',
       type: 'stop',
+      bath_ref: 'stop-bath',
       duration_seconds: 60,
       agitation: {
         initial_seconds: 30,
@@ -229,6 +240,7 @@ export const dividedD23: Recipe = {
       id: 'fixer-dev',
       name: 'Fixer',
       type: 'fixer',
+      bath_ref: 'fixer',
       duration_seconds: 480,  // 8:00 default — user override ได้
       duration_override_key: 'divided-d23.fixer.duration',
       agitation: {

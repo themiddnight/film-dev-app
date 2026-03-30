@@ -43,7 +43,7 @@ export default function SelectionScreenPage() {
           เลือก Process Steps ที่จะผสม
         </p>
         <div className="flex flex-col gap-1 mb-5">
-          {recipe.baths.map((bath) => (
+          {recipe.baths.filter((b) => b.mixing_required).map((bath) => (
             <label
               key={bath.id}
               className="flex items-center gap-4 bg-base-200 rounded-xl px-4 py-4 cursor-pointer hover:bg-base-300 transition-colors"
@@ -57,7 +57,7 @@ export default function SelectionScreenPage() {
               <div className="flex-1">
                 <p className="font-medium text-sm">{bath.name}</p>
                 <p className="text-xs text-sub">
-                  {bath.chemicals.map((c) => c.name).join(' + ')}
+                  {(bath.chemicals ?? []).map((c) => c.name).join(' + ')}
                 </p>
               </div>
             </label>

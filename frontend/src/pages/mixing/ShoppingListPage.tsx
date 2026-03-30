@@ -3,14 +3,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import ConfirmLeaveModal from '../../components/ConfirmLeaveModal'
-import { useMixingStore } from '../../store/mixingStore'
+import { useMixingStore, computePrepComplete } from '../../store/mixingStore'
 import { useUnit } from '../../hooks/useUnit'
 
 export default function ShoppingListPage() {
   const navigate = useNavigate()
   const {
     recipe, mode, currentBathIndex, selectedBathIds,
-    prepChecked, togglePrepItem, prepComplete,
+    prepChecked, togglePrepItem,
     selectedBaths, currentBath, scaledAmount, advanceToMix,
   } = useMixingStore()
   const { formatAmount } = useUnit()
@@ -24,7 +24,7 @@ export default function ShoppingListPage() {
   // SBS Mode: show only current bath
   const bathsToShow = mode === 'prep' ? selectedBaths() : [currentBath()].filter(Boolean) as typeof selectedBaths extends () => infer R ? R : never
 
-  const isComplete = prepComplete()
+  const isComplete = computePrepComplete(bathsToShow, prepChecked)
 
   function handleNext() {
     if (mode === 'step-by-step') {
@@ -45,7 +45,7 @@ export default function ShoppingListPage() {
     <div className="flex flex-col h-full">
       <Navbar
         title={navTitle}
-        subtitle={progressLabel}
+        step={progressLabel}
         onBack={() => anyChecked ? setShowLeaveModal(true) : navigate('/mixing/selection')}
       />
 
@@ -75,7 +75,7 @@ export default function ShoppingListPage() {
             </div>
 
             <div className="flex flex-col gap-1">
-              {bath.chemicals.map((chem, i) => {
+              {(bath.chemicals ?? []).map((chem, i) => {
                 const key = `${bath.id}-${i}`
                 const scaled = scaledAmount(chem.amount_per_liter)
                 return (

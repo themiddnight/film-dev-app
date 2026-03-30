@@ -4,14 +4,14 @@ import { useNavigate } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import Navbar from '../../components/Navbar'
 import ConfirmLeaveModal from '../../components/ConfirmLeaveModal'
-import { useMixingStore } from '../../store/mixingStore'
+import { useMixingStore, computeMixComplete } from '../../store/mixingStore'
 import { useUnit } from '../../hooks/useUnit'
 
 export default function MixChecklistPage() {
   const navigate = useNavigate()
   const {
     recipe, mode, currentBathIndex, selectedBathIds,
-    mixChecked, toggleMixItem, mixComplete,
+    mixChecked, toggleMixItem,
     currentBath, scaledAmount, advanceToBath, reset,
   } = useMixingStore()
   useUnit() // used via resolveInstruction
@@ -23,7 +23,7 @@ export default function MixChecklistPage() {
   if (!bath) { navigate('/mixing/selection'); return null }
 
   const anyChecked = Object.values(mixChecked).some(Boolean)
-  const isComplete = mixComplete()
+  const isComplete = computeMixComplete(bath, mixChecked)
   const isLastBath = currentBathIndex + 1 >= selectedBathIds.length
 
   // Resolve template variables in instruction text
@@ -34,7 +34,7 @@ export default function MixChecklistPage() {
     // Build a lookup from all chemicals in the current bath
     const chemLookup: Record<string, number> = {}
     if (bath) {
-      for (const chem of bath.chemicals) {
+      for (const chem of (bath.chemicals ?? [])) {
         chemLookup[chem.name.toLowerCase().replace(/[^a-z0-9]/g, '_')] = scaledAmount(chem.amount_per_liter)
       }
     }
@@ -80,7 +80,7 @@ export default function MixChecklistPage() {
     <div className="flex flex-col h-full">
       <Navbar
         title={navTitle}
-        subtitle={progressLabel}
+        step={progressLabel}
         onBack={() => anyChecked ? setShowLeaveModal(true) : navigate('/mixing/shopping')}
       />
 
@@ -97,7 +97,7 @@ export default function MixChecklistPage() {
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-24">
         <div className="flex flex-col gap-2">
-          {bath.mixing_steps.map((step, i) => {
+          {(bath.mixing_steps ?? []).map((step, i) => {
             const key = `${bath.id}-step-${i}`
             const checked = !!mixChecked[key]
             return (
@@ -157,7 +157,7 @@ export default function MixChecklistPage() {
         >
           {isLastBath
             ? '✅ เสร็จสิ้น — น้ำยาพร้อมใช้!'
-            : `${bath.name} เสร็จแล้ว → ไป ${recipe.baths[currentBathIndex + 1]?.name ?? 'ถัดไป'}`}
+            : `ถัดไป → ${recipe.baths[currentBathIndex + 1]?.name ?? 'ถัดไป'}`}
         </button>
       </div>
 

@@ -217,102 +217,15 @@ Browse Recipes
 
 ---
 
-## Data Model (Recipe JSON)
-
-ออกแบบให้รองรับสูตรหลากหลาย ไม่ผูกกับ Divided D-23
-
-```ts
-// types/recipe.ts (draft)
-
-type Chemical = {
-  name: string           // "Metol", "Sodium Sulphite"
-  amount_per_liter: number  // ปริมาณต่อ 1 ลิตร (metric เสมอ)
-  unit: "g" | "ml"
-  order: number          // ลำดับการใส่ — ห้ามเปลี่ยน
-  note?: string          // "ใส่หลัง Sodium Sulphite เสมอ"
-}
-
-type MixingStep = {
-  instruction: string    // "เทน้ำ {volume_75pct} ml ลงในภาชนะ"
-                         // ใช้ template variable สำหรับ calculated values
-  warning?: string       // แสดงโดดเด่น
-  chemicals?: Chemical[] // สารที่ใส่ใน step นี้
-}
-
-type Bath = {
-  id: string             // "bath-a", "stop-bath", "fixer"
-  name: string           // "Bath A — Developer"
-  chemicals: Chemical[]
-  mixing_steps: MixingStep[]
-  storage?: {
-    shelf_life: string   // "6–12 months"
-    container: string    // "amber bottle, sealed"
-    notes?: string
-  }
-}
-
-type AgitationSchedule = {
-  initial_seconds: number     // เขย่า N วินาทีแรก
-  interval_seconds: number    // จากนั้นทุก N วินาที
-  duration_seconds: number    // ครั้งละ N วินาที
-}
-
-type DevelopStep = {
-  id: string
-  name: string
-  type: "developer" | "activator" | "rinse" | "stop" | "fixer" | "wash" | "dry"
-  duration_seconds: number | "variable"  // "variable" = user กรอกเอง
-  duration_override_key?: string         // key ใน localStorage
-  agitation?: AgitationSchedule
-  warnings?: string[]         // แสดงตลอด step
-  transition_warning?: string // แสดงตอน step complete ก่อนไป step ถัดไป
-  temp_table?: {              // optional — ถ้ามี จะ override duration ตาม temp
-    [temp_celsius: number]: {
-      "N-1": number
-      "N": number
-      "N+1": number
-    }
-  }
-}
-
-type Recipe = {
-  id: string                  // "divided-d23"
-  name: string                // "Divided D-23 + Borax"
-  description: string
-  author: { id: string; name: string }
-  visibility: "public" | "private"
-  tags: string[]              // ["two-bath", "low-contrast", "tropical"]
-  film_types: string[]        // ["any"] or ["Kodak Tri-X", "Ilford HP5"]
-  base_volume_ml: number      // 1000 — ปริมาณที่สูตรกำหนด (ใช้ scale chemical amounts)
-  optimal_temp_range: { min: number; max: number }
-  baths: Bath[]               // สำหรับ Mixing Guide
-  develop_steps: DevelopStep[] // สำหรับ Develop Session
-}
-```
-
-### ตัวอย่างสูตรที่ต่างกัน — dynamic fields
-
-| | Divided D-23 | HC-110 | Rodinal | D-76 | Caffenol |
-|--|--|--|--|--|--|
-| Mix from raw chemicals | ✅ | ❌ (liquid concentrate) | ❌ (liquid concentrate) | ✅ | ✅ |
-| Baths | 2 (A+B) | 1 | 1 | 1 | 1 |
-| Temp table | ✅ | ✅ | ✅ | ✅ | ✅ |
-| N/N+1/N-1 | ✅ | ✅ | ✅ | ✅ | limited |
-| One-shot | ❌ (reusable) | ✅ | ✅ | ❌ | ✅ |
-| Variable fixer time | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-> HC-110 และ Rodinal เป็น liquid concentrate — `mixing_steps` จะเป็นแค่ dilution (เช่น "เท 6ml + น้ำ 294ml") ไม่มี raw chemicals
-> ต้องเพิ่ม field `developer_type: "raw" | "concentrate"` ใน Bath เพื่อ handle การ display ที่ต่างกัน
-
----
-
 ## localStorage Keys
 
 ```
-settings                          → { sound, vibrate, screenFlash, theme, unit, mixingMode }
-                                     mixingMode: "prep" | "step-by-step" — default ล่าสุดที่ user เลือก
-sessions.<recipeId>.overrides     → { [stepId]: duration_seconds }
+settings          → { sound, vibrate, screenFlash, theme, unit, mixingMode }
+                     mixingMode: "prep" | "step-by-step" — default ล่าสุดที่ user เลือก
+develop-session   → { stepOverrides, devType, tempCelsius }  (persisted โดย Zustand)
 ```
+
+> Type definitions ครบถ้วนอยู่ที่ `frontend/src/types/recipe.ts` — ดู `DATA_MODEL.md` สำหรับ field reference
 
 ---
 

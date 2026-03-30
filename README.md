@@ -36,7 +36,7 @@ bun run dev
 - Chemical mixing guide with step-by-step checklist
 - Real-time development timer with agitation reminders
 - Step preview with per-step time customization
-- Recipes stored as static JSON
+- Recipes stored as static TypeScript: Divided D-23, HC-110 Dil.B, Kodak D-76
 - PWA — works offline
 
 **Phase 2 — Dynamic**

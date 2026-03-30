@@ -38,6 +38,24 @@ type MixingStore = {
   mixComplete: () => boolean
 }
 
+// Pure helpers — explicit deps so React Compiler can track them correctly.
+export function computePrepComplete(
+  baths: Bath[],
+  prepChecked: Record<string, boolean>,
+): boolean {
+  return baths.every((bath) =>
+    (bath.chemicals ?? []).every((_, i) => prepChecked[`${bath.id}-${i}`])
+  )
+}
+
+export function computeMixComplete(
+  bath: Bath | null,
+  mixChecked: Record<string, boolean>,
+): boolean {
+  if (!bath) return false
+  return (bath.mixing_steps ?? []).every((_, i) => mixChecked[`${bath.id}-step-${i}`])
+}
+
 export const useMixingStore = create<MixingStore>()((set, get) => ({
   recipe: null,
   selectedBathIds: [],
@@ -52,7 +70,7 @@ export const useMixingStore = create<MixingStore>()((set, get) => ({
   setRecipe: (recipe) =>
     set({
       recipe,
-      selectedBathIds: recipe.baths.map((b) => b.id),
+      selectedBathIds: recipe.baths.filter((b) => b.mixing_required).map((b) => b.id),
       currentBathIndex: 0,
       prepChecked: {},
       mixChecked: {},
@@ -119,15 +137,11 @@ export const useMixingStore = create<MixingStore>()((set, get) => ({
     const baths = mode === 'prep'
       ? selectedBathIds.map((id) => recipe.baths.find((b) => b.id === id)!).filter(Boolean)
       : [recipe.baths.find((b) => b.id === selectedBathIds[currentBathIndex])!].filter(Boolean)
-    return baths.every((bath) =>
-      bath.chemicals.every((_, i) => prepChecked[`${bath.id}-${i}`])
-    )
+    return computePrepComplete(baths, prepChecked)
   },
 
   mixComplete: () => {
     const { currentBath, mixChecked } = get()
-    const bath = currentBath()
-    if (!bath) return false
-    return bath.mixing_steps.every((_, i) => mixChecked[`${bath.id}-step-${i}`])
+    return computeMixComplete(currentBath(), mixChecked)
   },
 }))

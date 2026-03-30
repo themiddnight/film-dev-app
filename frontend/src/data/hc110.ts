@@ -28,7 +28,10 @@ export const hc110: Recipe = {
     {
       id: 'hc110-working',
       name: 'HC-110 Working Solution (Dil. B)',
-      developer_type: 'concentrate',
+      role: 'developer',
+      chemical_format: 'liquid_concentrate',
+      mixing_required: true,
+      dilution_ratio: '1:31',
       chemicals: [
         {
           name: 'HC-110 Concentrate',
@@ -68,6 +71,7 @@ export const hc110: Recipe = {
       id: 'hc110-dev',
       name: 'HC-110 Dil.B',
       type: 'developer',
+      bath_ref: 'hc110-working',
       duration_seconds: 390, // 6:30 @ 20°C N — safe minimum ≥ 5:00
       duration_override_key: 'hc110.dev.duration',
       agitation: {

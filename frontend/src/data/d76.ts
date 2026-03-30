@@ -26,7 +26,10 @@ export const d76: Recipe = {
     {
       id: 'd76-stock',
       name: 'D-76 Stock',
-      developer_type: 'raw',
+      role: 'developer',
+      chemical_format: 'raw_powder',
+      mixing_required: true,
+      dilution_ratio: '1:1',
       chemicals: [
         {
           name: 'Metol (Elon)',
@@ -97,6 +100,7 @@ export const d76: Recipe = {
       id: 'd76-dev',
       name: 'D-76 1:1',
       type: 'developer',
+      bath_ref: 'd76-stock',
       duration_seconds: 660, // 11:00 @ 20°C N — default
       duration_override_key: 'd76.dev.duration',
       agitation: {

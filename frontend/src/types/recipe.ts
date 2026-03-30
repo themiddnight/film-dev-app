@@ -15,12 +15,29 @@ export type MixingStep = {
   chemicals?: Chemical[]    // สารที่ใส่ใน step นี้
 }
 
+export type ChemicalFormat =
+  | 'raw_powder'
+  | 'powder_concentrate'
+  | 'liquid_concentrate'
+  | 'ready_to_use'
+  | 'diy'
+
+export type BathRole =
+  | 'developer'
+  | 'stop'
+  | 'fixer'
+  | 'wash_aid'
+  | 'wetting_agent'
+
 export type Bath = {
   id: string                // "bath-a", "stop-bath", "fixer"
   name: string              // "Bath A — Developer"
-  developer_type: 'raw' | 'concentrate'
-  chemicals: Chemical[]
-  mixing_steps: MixingStep[]
+  role: BathRole
+  chemical_format: ChemicalFormat
+  mixing_required: boolean
+  chemicals?: Chemical[]
+  mixing_steps?: MixingStep[]
+  dilution_ratio?: string   // for liquid_concentrate only, e.g., "1:31"
   storage?: {
     shelf_life: string
     container: string
@@ -50,6 +67,9 @@ export type DevelopStep = {
   warnings?: string[]         // แสดงตลอด step
   transition_warning?: string // แสดงตอน Step Complete ก่อนไป step ถัดไป
   temp_table?: Record<number, TempTableEntry>  // temp_celsius → durations
+  bath_ref?: string           // links to Bath.id — used by steps that require chemicals
+  optional?: boolean          // marks step as skippable (wash_aid, wetting_agent)
+  optional_note?: string      // explains how to skip (e.g., substitute with water wash)
 }
 
 export type Recipe = {
