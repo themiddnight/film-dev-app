@@ -157,10 +157,10 @@ export default function MixChecklistPage() {
   async function handleKitAddNew() {
     await addBottle({
       developerName: bottleName,
-      role: bath.role,
+      role: bath!.role,
       // one-shot สำหรับ stop/fixer ที่มักไม่ reuse ข้ามสูตร
       // developer → reusable เป็น default ที่สมเหตุสมผล
-      type: bath.role === 'developer' ? 'reusable' : 'one-shot',
+      type: bath!.role === 'developer' ? 'reusable' : 'one-shot',
       mixedAt: new Date().toISOString(),
       rollsDeveloped: 0,
     })
