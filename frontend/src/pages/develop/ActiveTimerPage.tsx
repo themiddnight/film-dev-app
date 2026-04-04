@@ -12,6 +12,7 @@ export default function ActiveTimerPage() {
   const {
     recipe, currentStepIndex, timerState, remainingSeconds,
     pauseTimer, resumeTimer, exitSession, effectiveDuration,
+    slotSelections,
   } = useDevelopStore()
   const { sound, vibrate, screenFlash } = useSettingsStore()
   const [showExitModal, setShowExitModal] = useState(false)
@@ -97,6 +98,10 @@ export default function ActiveTimerPage() {
   }
 
   const step = recipe.develop_steps[currentStepIndex]
+
+  // ถ้า step เป็น stop bath แต่ไม่มีขวด chemical stop เลือกอยู่ → แสดง water stop note
+  const isStopStep = step.type === 'stop'
+  const stopSlotEmpty = isStopStep && !slotSelections[step.id]
   const totalSeconds = _totalSeconds
   const progress = totalSeconds > 0 ? (totalSeconds - remainingSeconds) / totalSeconds : 0
   const isRunning = timerState === 'running'
@@ -137,7 +142,7 @@ export default function ActiveTimerPage() {
             <button
               className="btn btn-ghost btn-sm btn-circle"
               onClick={() => setShowExitModal(true)}
-              aria-label="ออก"
+              aria-label="Exit"
             >
               ✕
             </button>
@@ -168,13 +173,20 @@ export default function ActiveTimerPage() {
           </div>
         ))}
 
+        {/* Water stop fallback note */}
+        {stopSlotEmpty && (
+          <div className="flex items-start gap-3 bg-base-200 border-l-4 border-primary/60 rounded-xl py-2 px-4 text-sm mb-3 mt-2">
+            <span>💧 No chemical stop selected — use water rinse instead (30–60 sec, continuous agitation)</span>
+          </div>
+        )}
+
         {/* Timer display */}
         <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-2 py-4">
           <span className={`text-8xl font-bold font-mono tabular-nums ${isAgitationTime ? 'text-warning' : 'text-base-content'}`}>
             {formatTime(remainingSeconds)}
           </span>
           <span className="text-sm text-sub">
-            เหลือ / {step.name} {formatTime(totalSeconds)} นาที
+            remaining / {step.name} {formatTime(totalSeconds)} min
           </span>
 
           {/* Progress bar for current step */}
@@ -194,10 +206,10 @@ export default function ActiveTimerPage() {
                 <Bell size={16} className={`mt-0.5 shrink-0 ${isAgitationTime ? 'text-warning' : 'text-sub'}`} />
                 <div>
                   <p className={`text-sm font-medium ${isAgitationTime ? 'text-warning' : ''}`}>
-                    {isAgitationTime ? '🔔 เวลาเขย่าแล้ว!' : '🔔 Agitation Reminder'}
+                    {isAgitationTime ? '🔔 Time to agitate!' : '🔔 Agitation Reminder'}
                   </p>
                   <p className="text-xs text-sub">
-                    เขย่า {agitation.duration_seconds} วินาที ทุก {agitation.interval_seconds} วินาที
+                    Agitate {agitation.duration_seconds}s every {agitation.interval_seconds}s
                   </p>
                 </div>
               </div>
@@ -217,11 +229,11 @@ export default function ActiveTimerPage() {
           {nextStep && (
             <div className="card bg-base-200 w-full">
               <div className="card-body py-3 px-4">
-                <p className="text-xs text-sub">ถัดไป →</p>
+                <p className="text-xs text-sub">Next →</p>
                 <p className="text-sm font-medium">{nextStep.name}</p>
                 {nextStep.duration_seconds !== 'variable' && (
                   <p className="text-xs text-sub">
-                    {formatTime(effectiveDuration(nextStep))} นาที
+                    {formatTime(effectiveDuration(nextStep))} min
                   </p>
                 )}
               </div>
@@ -253,11 +265,11 @@ export default function ActiveTimerPage() {
           disabled={!isComplete && timerState !== 'paused'}
           onClick={handleNext}
         >
-          {nextStep ? `Step ต่อไป →` : 'เสร็จสิ้น 🎉'}
+          {nextStep ? `Next step →` : 'All done 🎉'}
         </button>
         {(timerState === 'paused') && (
           <p className="text-xs text-center text-muted mt-1">
-            หรือ <button className="underline" onClick={() => setShowExitModal(true)}>ออก session</button>
+            or <button className="underline" onClick={() => setShowExitModal(true)}>exit session</button>
           </p>
         )}
       </div>
@@ -265,10 +277,10 @@ export default function ActiveTimerPage() {
       {/* Confirm exit */}
       <ConfirmLeaveModal
         open={showExitModal}
-        title="⚠️ ออกจาก session?"
-        message="ฟิล์มยังอยู่ในน้ำยา — การออกกลางคันอาจทำให้ฟิล์มเสียหาย"
-        confirmLabel="ออก — กลับหน้าหลัก"
-        cancelLabel="อยู่ต่อ"
+        title="⚠️ Exit session?"
+        message="Film is still in the chemical — leaving mid-session may damage the film"
+        confirmLabel="Exit — go to home"
+        cancelLabel="Stay"
         danger
         onConfirm={handleExit}
         onCancel={() => setShowExitModal(false)}

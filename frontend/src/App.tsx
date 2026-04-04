@@ -21,6 +21,10 @@ import SelectionScreenPage from "./pages/mixing/SelectionScreenPage";
 import ShoppingListPage from "./pages/mixing/ShoppingListPage";
 import MixChecklistPage from "./pages/mixing/MixChecklistPage";
 
+// Pages — My Kit
+import MyKitPage from "./pages/MyKitPage";
+import CreateKitPage from "./pages/CreateKitPage";
+
 // ── Route guards ────────────────────────────────────────────────────────────
 // Redirect to fallback if the required store state is missing.
 // This catches direct URL access, page refresh mid-session, and bookmark entry.
@@ -67,6 +71,8 @@ export default function App() {
             {/* Root */}
             <Route path="/" element={<HomePage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/my-kit" element={<MyKitPage />} />
+            <Route path="/my-kit/create-kit" element={<CreateKitPage />} />
 
             {/* Develop Session — recipe required */}
             <Route path="/develop/recipe" element={<RecipeSelectPage />} />

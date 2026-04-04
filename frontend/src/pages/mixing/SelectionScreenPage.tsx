@@ -26,8 +26,8 @@ export default function SelectionScreenPage() {
   }
 
   const modes: { value: MixingMode; label: string; desc: string }[] = [
-    { value: 'prep', label: 'Prep Mode', desc: 'ชั่ง/ตวงทุก step ก่อน แล้วผสมรวด' },
-    { value: 'step-by-step', label: 'Step-by-Step', desc: 'เตรียม + ผสม ทีละ step' },
+    { value: 'prep', label: 'Prep Mode', desc: 'Measure all steps first, then mix at once' },
+    { value: 'step-by-step', label: 'Step-by-Step', desc: 'Measure and mix one step at a time' },
   ]
 
   return (
@@ -40,7 +40,7 @@ export default function SelectionScreenPage() {
       <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-24 pt-3">
         {/* Bath selection */}
         <p className="text-xs text-sub uppercase tracking-widest pb-2">
-          เลือก Process Steps ที่จะผสม
+          Select process steps to mix
         </p>
         <div className="flex flex-col gap-1 mb-5">
           {recipe.baths.filter((b) => b.mixing_required).map((bath) => (
@@ -70,33 +70,43 @@ export default function SelectionScreenPage() {
         </p>
         <div className="card bg-base-200 mb-5">
           <div className="card-body py-4 px-5">
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min={100}
-                max={5000}
-                step={100}
-                value={targetVolumeMl}
-                onChange={(e) => setTargetVolume(Number(e.target.value))}
-                className="input input-bordered w-28 text-right font-bold text-lg"
-              />
-              <div className="join">
-                <button className={`join-item btn btn-sm ${unit === 'metric' ? 'btn-primary' : 'btn-ghost'}`}>
-                  ml
-                </button>
-                <button className={`join-item btn btn-sm ${unit === 'imperial' ? 'btn-primary' : 'btn-ghost'}`}>
-                  oz
-                </button>
-              </div>
-            </div>
+            {(() => {
+              const ML_TO_FLOZ = 0.033814
+              const FLOZ_TO_ML = 29.5735
+              const isImperial = unit === 'imperial'
+              const displayValue = isImperial
+                ? Math.round(targetVolumeMl * ML_TO_FLOZ * 10) / 10
+                : targetVolumeMl
+              const unitLabel = isImperial ? 'fl oz' : 'ml'
+              const minVal = isImperial ? 3.4 : 100
+              const maxVal = isImperial ? 169 : 5000
+              const stepVal = isImperial ? 1 : 100
+              return (
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min={minVal}
+                    max={maxVal}
+                    step={stepVal}
+                    value={displayValue}
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      setTargetVolume(isImperial ? Math.round(v * FLOZ_TO_ML) : v)
+                    }}
+                    className="input input-bordered w-28 text-right font-bold text-lg"
+                  />
+                  <span className="text-sm font-medium text-sub">{unitLabel}</span>
+                </div>
+              )
+            })()}
             <p className="text-xs text-sub mt-1">
-              สารเคมีทุกตัวจะ scale ตามปริมาณนี้
+              All chemicals will be scaled to this volume
             </p>
           </div>
         </div>
 
         {/* Mode */}
-        <p className="text-xs text-sub uppercase tracking-widest pb-2">วิธีการเตรียม</p>
+        <p className="text-xs text-sub uppercase tracking-widest pb-2">Mixing mode</p>
         <div className="grid grid-cols-2 gap-2">
           {modes.map(({ value, label, desc }) => (
             <button
@@ -111,7 +121,7 @@ export default function SelectionScreenPage() {
               <p className="font-semibold text-sm mb-1">{label}</p>
               <p className="text-xs text-sub leading-relaxed">{desc}</p>
               {mode === value && (
-                <span className="badge badge-primary badge-xs mt-2">✓ เลือก</span>
+                <span className="badge badge-primary badge-xs mt-2">✓ Selected</span>
               )}
             </button>
           ))}
@@ -125,7 +135,7 @@ export default function SelectionScreenPage() {
           disabled={selectedBathIds.length === 0}
           onClick={handleStart}
         >
-          เริ่มผสม →
+          Start mixing →
         </button>
       </div>
     </div>

@@ -3,6 +3,12 @@
   themes: dark --default, light;
 }
 
+/* ── Typography — Space Grotesk (sans) + Space Mono (mono) ── */
+@theme {
+  --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+}
+
 /* ── Design Tokens: see tokens.css (imported after this file in main.tsx) ── */
 
 /* ── Border Radius Tokens (from Figma wireframes)
@@ -17,14 +23,17 @@
   --radius-selector: 0.875rem;  /* 14px — buttons, toggles */
 }
 
-/* Boost dark mode text contrast — DaisyUI default 74.6% is too dim */
+/* Boost dark mode text contrast — warm hue aligned with Deep Red palette */
 :root[data-theme="dark"], [data-theme="dark"] {
-  --color-base-content: oklch(92% 0.014 264) !important;
+  --color-base-content: oklch(92% 0.006 22) !important;
 }
 
 /* Reset */
 *, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+}
 
 /* Smooth font rendering */
 html {
@@ -40,6 +49,15 @@ html {
 
 /* Tab-nums for timer display */
 .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ── Font utilities ──────────────────────────────────────────────────────── */
+/* .label-mono  — สำหรับ STATION_A, STATUS badge, tag ที่ต้องการ mono feel */
+.label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;   /* 11px */
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 
 /* ── Bottom Sheet slide animations ──────────────────────────────────────── */
 @keyframes slideUp {
@@ -57,13 +75,13 @@ html {
    text-warn-title / text-warn-body = transition warning
    ────────────────────────────────────────────────────────────────────────── */
 
-/* Dark (default) */
-.text-muted      { color: oklch(58% 0.012 255); }   /* ~#828a96 */
-.text-sub        { color: oklch(74% 0.018 255); }   /* ~#b2bac8 */
+/* Dark (default) — warm hue aligned with Deep Red palette */
+.text-muted      { color: oklch(55% 0.012 22); }   /* warm grey dim */
+.text-sub        { color: oklch(72% 0.014 22); }   /* warm grey mid */
 
 /* Light */
-[data-theme="light"] .text-muted { color: oklch(44% 0.012 255); }  /* ~#58606c */
-[data-theme="light"] .text-sub   { color: oklch(36% 0.016 255); }  /* ~#404854 */
+[data-theme="light"] .text-muted { color: oklch(42% 0.012 22); }
+[data-theme="light"] .text-sub   { color: oklch(34% 0.016 22); }
 
-.text-warn-title { color: #ffc24d; }
-.text-warn-body  { color: #e5b266; }
+.text-warn-title { color: var(--color-warning); }
+.text-warn-body  { color: color-mix(in oklch, var(--color-warning) 75%, var(--color-base-content) 25%); }

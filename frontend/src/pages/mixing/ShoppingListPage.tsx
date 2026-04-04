@@ -34,7 +34,7 @@ export default function ShoppingListPage() {
   }
 
   const navTitle = mode === 'prep'
-    ? 'PREP — ชั่ง/ตวงให้ครบก่อน'
+    ? 'PREP — Measure everything first'
     : `PREP — ${currentBath()?.name ?? ''}`
 
   const progressLabel = mode === 'step-by-step'
@@ -58,8 +58,8 @@ export default function ShoppingListPage() {
         </div>
       </div>
 
-      <div className="alert alert-info py-2 px-4 mx-4 mb-2 text-sm rounded-xl">
-        <span>ชั่ง/ตวงสารเคมีทุกรายการให้ครบก่อนเริ่มผสม</span>
+      <div className="flex items-center gap-3 bg-base-200 border-l-4 border-primary rounded-xl py-2 px-4 mx-4 mb-2 text-sm">
+        <span>Measure all chemicals before starting to mix</span>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-24">
@@ -112,7 +112,7 @@ export default function ShoppingListPage() {
         {/* Progress summary */}
         {isComplete && (
           <div className="alert alert-success text-sm mb-4">
-            <span>✓ เตรียมครบแล้ว พร้อมผสม!</span>
+            <span>✓ All measured — ready to mix!</span>
           </div>
         )}
       </div>
@@ -125,22 +125,22 @@ export default function ShoppingListPage() {
           onClick={handleNext}
         >
           {mode === 'prep'
-            ? 'ชั่ง/ตวงครบแล้ว → เริ่มผสม'
-            : `ชั่งครบแล้ว → เริ่มผสม ${currentBath()?.name ?? ''}`}
+            ? 'All measured → Start mixing'
+            : `All measured → Mix ${currentBath()?.name ?? ''}`}
         </button>
         {!isComplete && (
           <p className="text-xs text-center text-sub mt-1">
-            (active เมื่อ tick ครบทุกรายการ)
+            (enabled when all items are ticked)
           </p>
         )}
       </div>
 
       <ConfirmLeaveModal
         open={showLeaveModal}
-        title="ออกจากการเตรียม?"
-        message="tick ที่ทำไว้จะหายไปทั้งหมด"
-        confirmLabel="ออก"
-        cancelLabel="อยู่ต่อ"
+        title="Leave prep?"
+        message="All ticked items will be lost"
+        confirmLabel="Leave"
+        cancelLabel="Stay"
         onConfirm={() => navigate('/mixing/selection')}
         onCancel={() => setShowLeaveModal(false)}
       />

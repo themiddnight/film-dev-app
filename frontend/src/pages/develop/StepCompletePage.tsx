@@ -27,12 +27,12 @@ export default function StepCompletePage() {
   return (
     <div className="flex flex-col h-full">
       {/* No back button — see BACK_BUTTON_POLICY.md */}
-      <Navbar title={`${step.name} — เสร็จแล้ว`} showBack={false} />
+      <Navbar title={`${step.name} — done`} showBack={false} />
 
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center px-4 pb-24 pt-8">
         {/* Success icon */}
         <CheckCircle2 size={80} className="text-success mb-4" strokeWidth={1.5} />
-        <h2 className="text-xl font-bold mb-1">{step.name} เสร็จแล้ว!</h2>
+        <h2 className="text-xl font-bold mb-1">{step.name} done!</h2>
 
         {/* Transition warning */}
         {step.transition_warning && (
@@ -44,7 +44,7 @@ export default function StepCompletePage() {
         {/* Next step preview */}
         {nextStep && (
           <div className="w-full mt-4">
-            <p className="text-xs text-sub uppercase tracking-widest mb-2">ขั้นตอนถัดไป</p>
+            <p className="text-xs text-sub uppercase tracking-widest mb-2">Next step</p>
             <div className="card bg-base-200 w-full">
               <div className="card-body py-4 px-5 flex-row items-center gap-3">
                 <div className="w-1 self-stretch bg-primary rounded-full" />
@@ -52,7 +52,7 @@ export default function StepCompletePage() {
                   <p className="font-semibold text-sm">{nextStep.name}</p>
                   {nextStep.duration_seconds !== 'variable' && (
                     <p className="text-xs text-sub">
-                      {formatTime(effectiveDuration(nextStep))} นาที
+                      {formatTime(effectiveDuration(nextStep))} min
                     </p>
                   )}
                   {nextStep.warnings?.[0] && (
@@ -69,7 +69,7 @@ export default function StepCompletePage() {
           className="btn btn-ghost btn-sm text-muted mt-6"
           onClick={() => setShowExitModal(true)}
         >
-          ออก session
+          Exit session
         </button>
       </div>
 
@@ -77,21 +77,21 @@ export default function StepCompletePage() {
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] p-4 bg-base-100/90 backdrop-blur-sm border-t border-base-300">
         {isLast ? (
           <button className="btn btn-success w-full btn-lg" onClick={() => { exitSession(); navigate('/develop/done') }}>
-            เสร็จสิ้นทุกขั้นตอน 🎉
+            All steps complete 🎉
           </button>
         ) : (
           <button className="btn btn-primary w-full btn-lg" onClick={handleNext}>
-            เริ่ม {nextStep.name} →
+            Start {nextStep.name} →
           </button>
         )}
       </div>
 
       <ConfirmLeaveModal
         open={showExitModal}
-        title="⚠️ ออกจาก session?"
-        message="ฟิล์มยังอาจอยู่ในน้ำยา — ออกกลางคันอาจทำให้ฟิล์มเสียหาย"
-        confirmLabel="ออก — กลับหน้าหลัก"
-        cancelLabel="อยู่ต่อ"
+        title="⚠️ Exit session?"
+        message="Film may still be in the chemical — leaving mid-session may damage the film"
+        confirmLabel="Exit — go to home"
+        cancelLabel="Stay"
         danger
         onConfirm={() => { exitSession(); navigate('/') }}
         onCancel={() => setShowExitModal(false)}

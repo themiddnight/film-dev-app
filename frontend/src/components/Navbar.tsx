@@ -19,7 +19,7 @@ export default function Navbar({ title, subtitle, step, showBack = true, onBack,
     <div className="navbar bg-base-200/80 backdrop-blur-sm sticky top-0 z-30 border-b border-base-300 min-h-14 px-4">
       <div className="navbar-start w-10">
         {showBack && (
-          <button className="btn btn-ghost btn-sm btn-circle" onClick={handleBack} aria-label="ย้อนกลับ">
+          <button className="btn btn-ghost btn-sm btn-circle" onClick={handleBack} aria-label="Go back">
             <ArrowLeft size={20} />
           </button>
         )}

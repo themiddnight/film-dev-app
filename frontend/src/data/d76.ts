@@ -24,6 +24,13 @@ export const d76: Recipe = {
   // ── Mixing Guide ──────────────────────────────────────────────────────────
   baths: [
     {
+      id: 'd76-water-stop',
+      name: 'Water Stop',
+      role: 'stop',
+      chemical_format: 'ready_to_use',
+      mixing_required: false,
+    },
+    {
       id: 'd76-stock',
       name: 'D-76 Stock',
       role: 'developer',
@@ -36,21 +43,21 @@ export const d76: Recipe = {
           amount_per_liter: 2,
           unit: 'g',
           order: 1,
-          note: 'ใส่ก่อนเสมอ — ต้องละลายหมดก่อนใส่ Hydroquinone มิฉะนั้น Hydroquinone จะไม่ละลาย',
+          note: 'Always add first — must be fully dissolved before adding Hydroquinone, otherwise Hydroquinone will not dissolve',
         },
         {
           name: 'Sodium Sulphite (anhydrous)',
           amount_per_liter: 100,
           unit: 'g',
           order: 2,
-          note: 'ใส่หลัง Metol — ช่วยป้องกัน oxidation',
+          note: 'Add after Metol — helps prevent oxidation',
         },
         {
           name: 'Hydroquinone',
           amount_per_liter: 5,
           unit: 'g',
           order: 3,
-          note: 'ใส่หลัง Sodium Sulphite เสมอ — ห้ามใส่ก่อน Metol',
+          note: 'Always add after Sodium Sulphite — do not add before Metol',
         },
         {
           name: 'Borax (Sodium Tetraborate)',
@@ -61,33 +68,33 @@ export const d76: Recipe = {
       ],
       mixing_steps: [
         {
-          instruction: 'เทน้ำอุ่น ~52°C ({volume_75pct} ml) ลงในภาชนะ — น้ำอุ่นช่วยละลายสารเคมีได้ดีขึ้น',
+          instruction: 'Pour warm water ~52°C ({volume_75pct} ml) into container — warm water helps dissolve chemicals',
         },
         {
-          instruction: 'ใส่ Metol {metol_d76} g คนจนละลายหมด — อาจใช้เวลาสักครู่',
-          warning: 'ต้องละลาย Metol ให้หมดก่อนใส่ Hydroquinone เสมอ',
+          instruction: 'Add Metol {metol_d76} g, stir until fully dissolved — may take a moment',
+          warning: 'Metol must be fully dissolved before adding Hydroquinone',
           chemicals: [{ name: 'Metol (Elon)', amount_per_liter: 2, unit: 'g', order: 1 }],
         },
         {
-          instruction: 'ใส่ Sodium Sulphite {sodium_sulphite} g คนจนละลายหมด',
+          instruction: 'Add Sodium Sulphite {sodium_sulphite} g, stir until fully dissolved',
           chemicals: [{ name: 'Sodium Sulphite (anhydrous)', amount_per_liter: 100, unit: 'g', order: 2 }],
         },
         {
-          instruction: 'ใส่ Hydroquinone {hydroquinone} g คนจนละลายหมด',
+          instruction: 'Add Hydroquinone {hydroquinone} g, stir until fully dissolved',
           chemicals: [{ name: 'Hydroquinone', amount_per_liter: 5, unit: 'g', order: 3 }],
         },
         {
-          instruction: 'ใส่ Borax {borax_d76} g คนจนละลายหมด',
+          instruction: 'Add Borax {borax_d76} g, stir until fully dissolved',
           chemicals: [{ name: 'Borax (Sodium Tetraborate)', amount_per_liter: 2, unit: 'g', order: 4 }],
         },
         {
-          instruction: 'เติมน้ำเย็น (อุณหภูมิห้อง) จนครบ {target_volume} ml ปล่อยให้เย็นลงก่อนใช้',
+          instruction: 'Top up with cool water (room temperature) to {target_volume} ml, let cool before use',
         },
       ],
       storage: {
         shelf_life: '6 months (stock) · 24 hours (diluted 1:1)',
         container: 'dark glass bottle, filled to top, sealed',
-        notes: 'เก็บให้เต็มขวดที่สุดเพื่อลด headspace — อากาศทำให้เสื่อมสภาพ ห้ามใช้ diluted solution ข้ามวัน',
+        notes: 'Fill bottle as full as possible to minimize headspace — air causes deterioration. Do not use diluted solution after the same day',
       },
     },
   ],
@@ -108,8 +115,8 @@ export const d76: Recipe = {
         interval_seconds: 60,
         duration_seconds: 5,
       },
-      warnings: ['ใช้ dilution 1:1 (stock 1 ส่วน : น้ำ 1 ส่วน) — one-shot ทิ้งหลังใช้'],
-      transition_warning: 'เท D-76 ทิ้ง (one-shot) — ไม่ใช้ซ้ำ ล้างน้ำสั้นๆ ก่อน Stop Bath',
+      warnings: ['Use dilution 1:1 (1 part stock : 1 part water) — one-shot, discard after use'],
+      transition_warning: 'Discard D-76 (one-shot) — do not reuse. Rinse briefly before Stop Bath',
       temp_table: {
         18: { 'N-1': 600, 'N': 780, 'N+1': 1020 }, // 10:00 / 13:00 / 17:00
         20: { 'N-1': 495, 'N': 660, 'N+1': 870 }, // 8:15  / 11:00 / 14:30
@@ -130,12 +137,13 @@ export const d76: Recipe = {
         interval_seconds: 60,
         duration_seconds: 60,
       },
-      transition_warning: 'ล้างน้ำ 3 รอบก็พอ แล้วเท Stop Bath เข้าทันที',
+      transition_warning: '3 rinse cycles is enough — then pour Stop Bath immediately',
     },
     {
       id: 'd76-stop',
       name: 'Stop Bath',
       type: 'stop',
+      bath_ref: 'd76-water-stop',
       duration_seconds: 60,
       agitation: {
         initial_seconds: 30,
@@ -147,14 +155,14 @@ export const d76: Recipe = {
       id: 'd76-fixer',
       name: 'Fixer',
       type: 'fixer',
-      duration_seconds: 480, // 8:00 default — user วัด clearing time × 2
+      duration_seconds: 480, // 8:00 default — user should measure clearing time × 2
       duration_override_key: 'd76.fixer.duration',
       agitation: {
         initial_seconds: 30,
         interval_seconds: 60,
         duration_seconds: 5,
       },
-      warnings: ['วัด clearing time แล้วคูณ 2 — อย่าใช้ default โดยไม่ทดสอบ'],
+      warnings: ['Measure clearing time then multiply by 2 — do not use default without testing'],
     },
     {
       id: 'd76-wash',
@@ -169,10 +177,10 @@ export const d76: Recipe = {
     },
     {
       id: 'd76-dry',
-      name: 'ผึ่งแห้ง',
+      name: 'Hang to Dry',
       type: 'dry',
       duration_seconds: 'variable',
-      warnings: ['ผึ่งแห้งในที่ไม่มีฝุ่น 1–2 ชั่วโมง ห้ามเช็ดฟิล์มก่อนแห้ง'],
+      warnings: ['Hang to dry in a dust-free area for 1–2 hours, do not wipe film before it is dry'],
     },
   ],
 }

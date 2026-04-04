@@ -60,6 +60,13 @@ export type TempTableEntry = {
 export type DevelopStep = {
   id: string
   name: string
+  // type = functional role ของ step ในกระบวนการล้างฟิล์ม (ไม่ใช่ chemistry)
+  // ความต่างจาก Bath.role:
+  //   Bath.role = "สารนี้คืออะไร" (chemistry perspective)
+  //   DevelopStep.type = "step นี้ทำหน้าที่อะไร" (process perspective)
+  // ตัวอย่าง Divided D-23 Bath B (Borax):
+  //   Bath.role = 'developer' (เป็น developer solution)
+  //   DevelopStep.type = 'activator' (ทำหน้าที่ activate Bath A ไม่ใช่ develop โดยตรง)
   type: 'developer' | 'activator' | 'rinse' | 'stop' | 'fixer' | 'wash' | 'dry'
   duration_seconds: number | 'variable'  // "variable" = user กรอกเอง
   duration_override_key?: string          // localStorage key

@@ -12,10 +12,10 @@ type Props = {
 
 export default function ConfirmLeaveModal({
   open,
-  title = 'ยืนยัน',
+  title = 'Confirm',
   message,
-  confirmLabel = 'ยืนยัน',
-  cancelLabel = 'ยกเลิก',
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
   onConfirm,
   onCancel,
   danger = false,

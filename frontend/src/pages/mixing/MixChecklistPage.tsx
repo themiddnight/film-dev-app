@@ -1,11 +1,66 @@
 // pages/mixing/MixChecklistPage.tsx — 11 · Mix Checklist
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Plus } from 'lucide-react'
 import Navbar from '../../components/Navbar'
 import ConfirmLeaveModal from '../../components/ConfirmLeaveModal'
 import { useMixingStore, computeMixComplete } from '../../store/mixingStore'
 import { useUnit } from '../../hooks/useUnit'
+import { useKitStore } from '../../store/kitStore'
+
+// ── My Kit Prompt (หลัง developer bath Done) ──────────────────────────────────
+type AddBottleSheetProps = {
+  developerName: string
+  existingBottleId: string | null  // ถ้ามีขวดชื่อเดิมอยู่แล้ว
+  existingBottleName: string | null
+  onAddNew: () => void
+  onUpdateExisting: () => void
+  onSkip: () => void
+}
+
+function MyKitPrompt({
+  developerName,
+  existingBottleId,
+  existingBottleName,
+  onAddNew,
+  onUpdateExisting,
+  onSkip,
+}: AddBottleSheetProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60">
+      <div className="bg-base-100 rounded-t-[14px] px-5 pt-5 pb-8 w-full max-w-[430px]"
+        style={{ animation: 'slideUp 300ms cubic-bezier(0.32,0.72,0,1)' }}>
+        <div className="flex items-center gap-2 mb-1">
+          <Plus size={18} className="text-primary" />
+          <h3 className="font-bold text-base">Save to Inventory?</h3>
+        </div>
+        <p className="text-sm text-sub mb-4">
+          {developerName} — mixing complete
+        </p>
+
+        <div className="flex flex-col gap-2">
+          {existingBottleId && (
+            <button
+              className="btn btn-outline btn-primary w-full"
+              onClick={onUpdateExisting}
+            >
+              Update existing bottle ({existingBottleName})
+            </button>
+          )}
+          <button
+            className="btn btn-primary w-full"
+            onClick={onAddNew}
+          >
+            {existingBottleId ? 'Add as new bottle' : 'Save as new bottle'}
+          </button>
+          <button className="btn btn-ghost w-full" onClick={onSkip}>
+            Skip
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function MixChecklistPage() {
   const navigate = useNavigate()
@@ -15,7 +70,12 @@ export default function MixChecklistPage() {
     currentBath, scaledAmount, advanceToBath, reset,
   } = useMixingStore()
   useUnit() // used via resolveInstruction
+  const { kit, loadKit, addBottle, updateBottle } = useKitStore()
   const [showLeaveModal, setShowLeaveModal] = useState(false)
+  const [showKitPrompt, setShowKitPrompt] = useState(false)
+
+  // Load kit เพื่อเช็คขวดที่มีอยู่
+  useEffect(() => { loadKit() }, [loadKit])
 
   if (!recipe) { navigate('/mixing/recipe'); return null }
 
@@ -25,6 +85,18 @@ export default function MixChecklistPage() {
   const anyChecked = Object.values(mixChecked).some(Boolean)
   const isComplete = computeMixComplete(bath, mixChecked)
   const isLastBath = currentBathIndex + 1 >= selectedBathIds.length
+
+  // ทุก bath ที่มี mixing_required → prompt เพิ่ม inventory (ไม่จำกัดแค่ developer)
+  const isMixingBath = bath.mixing_required === true
+  // ชื่อขวดที่บันทึก: "Divided D-23 Bath A", "Divided D-23 Stop Bath"
+  // bath.name = "Bath A — Developer" → shortName = "Bath A"
+  const bathShortName = bath.name.replace(/\s*—.*$/, '').trim()
+  const bottleName = `${recipe.name.split(' + ')[0]} ${bathShortName}`
+  const existingBottle = isMixingBath
+    ? kit.bottles.find((b) =>
+        b.developerName.toLowerCase() === bottleName.toLowerCase()
+      ) ?? null
+    : null
 
   // Resolve template variables in instruction text
   // Variables correspond to chemical amount_per_liter values for each recipe
@@ -59,7 +131,7 @@ export default function MixChecklistPage() {
       .replace(/{hc110_water}/g, String(vol - Math.round(vol / 32)))
   }
 
-  function handleNext() {
+  function proceedAfterKit() {
     if (isLastBath) {
       reset()
       navigate('/')
@@ -71,6 +143,44 @@ export default function MixChecklistPage() {
         navigate('/mixing/checklist')
       }
     }
+  }
+
+  function handleNext() {
+    // ทุก bath ที่ผสมจริง (mixing_required) → prompt เพิ่ม inventory
+    if (isMixingBath) {
+      setShowKitPrompt(true)
+    } else {
+      proceedAfterKit()
+    }
+  }
+
+  async function handleKitAddNew() {
+    await addBottle({
+      developerName: bottleName,
+      role: bath.role,
+      // one-shot สำหรับ stop/fixer ที่มักไม่ reuse ข้ามสูตร
+      // developer → reusable เป็น default ที่สมเหตุสมผล
+      type: bath.role === 'developer' ? 'reusable' : 'one-shot',
+      mixedAt: new Date().toISOString(),
+      rollsDeveloped: 0,
+    })
+    setShowKitPrompt(false)
+    proceedAfterKit()
+  }
+
+  async function handleKitUpdateExisting() {
+    if (!existingBottle) return
+    await updateBottle(existingBottle.id, {
+      mixedAt: new Date().toISOString(),
+      rollsDeveloped: 0,
+    })
+    setShowKitPrompt(false)
+    proceedAfterKit()
+  }
+
+  function handleKitSkip() {
+    setShowKitPrompt(false)
+    proceedAfterKit()
   }
 
   const navTitle = `MIX — ${bath.name}`
@@ -93,7 +203,7 @@ export default function MixChecklistPage() {
         </div>
       </div>
 
-      <p className="text-sm text-sub px-4 pb-2">ผสมตามขั้นตอนด้านล่าง</p>
+      <p className="text-sm text-sub px-4 pb-2">Follow the steps below to mix</p>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-24">
         <div className="flex flex-col gap-2">
@@ -138,10 +248,10 @@ export default function MixChecklistPage() {
 
         {isComplete && (
           <div className="alert alert-success text-sm mt-4">
-            <span>✓ {bath.name} ผสมเสร็จแล้ว!</span>
+            <span>✓ {bath.name} mixing complete!</span>
             {bath.storage && (
               <p className="text-xs opacity-70 mt-1">
-                เก็บใน{bath.storage.container} · {bath.storage.shelf_life}
+                Store in {bath.storage.container} · {bath.storage.shelf_life}
               </p>
             )}
           </div>
@@ -156,20 +266,31 @@ export default function MixChecklistPage() {
           onClick={handleNext}
         >
           {isLastBath
-            ? '✅ เสร็จสิ้น — น้ำยาพร้อมใช้!'
-            : `ถัดไป → ${recipe.baths[currentBathIndex + 1]?.name ?? 'ถัดไป'}`}
+            ? '✅ Done — chemicals ready to use!'
+            : `Next → ${recipe.baths[currentBathIndex + 1]?.name ?? 'Next'}`}
         </button>
       </div>
 
       <ConfirmLeaveModal
         open={showLeaveModal}
-        title="ออกจากการผสม?"
-        message="ความคืบหน้าจะหายไปทั้งหมด"
-        confirmLabel="ออก"
-        cancelLabel="อยู่ต่อ"
+        title="Leave mixing?"
+        message="All progress will be lost"
+        confirmLabel="Leave"
+        cancelLabel="Stay"
         onConfirm={() => navigate('/mixing/selection')}
         onCancel={() => setShowLeaveModal(false)}
       />
+
+      {showKitPrompt && (
+        <MyKitPrompt
+          developerName={bottleName}
+          existingBottleId={existingBottle?.id ?? null}
+          existingBottleName={existingBottle?.developerName ?? null}
+          onAddNew={handleKitAddNew}
+          onUpdateExisting={handleKitUpdateExisting}
+          onSkip={handleKitSkip}
+        />
+      )}
     </div>
   )
 }

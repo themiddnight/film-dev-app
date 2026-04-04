@@ -18,20 +18,20 @@ export default function SettingsPage() {
         <div className="card bg-base-200">
           <div className="card-body p-0 divide-y divide-base-300">
             <ToggleRow
-              label="เสียง (Sound)"
-              desc="beep เมื่อถึงเวลาเขย่า"
+              label="Sound"
+              desc="Beep when it's time to agitate"
               checked={s.sound}
               onChange={(v) => s.update({ sound: v })}
             />
             <ToggleRow
-              label="สั่น (Vibrate)"
-              desc="สำหรับอุปกรณ์ที่รองรับ"
+              label="Vibrate"
+              desc="On supported devices"
               checked={s.vibrate}
               onChange={(v) => s.update({ vibrate: v })}
             />
             <ToggleRow
               label="Screen Flash"
-              desc="หน้าจอกระพริบสั้นๆ"
+              desc="Brief flash on the screen"
               checked={s.screenFlash}
               onChange={(v) => s.update({ screenFlash: v })}
             />
@@ -43,7 +43,7 @@ export default function SettingsPage() {
         <div className="card bg-base-200">
           <div className="card-body py-4 px-5 flex-row items-center justify-between">
             <div>
-              <div className="font-medium text-sm">หน่วยวัด (Units)</div>
+              <div className="font-medium text-sm">Units</div>
               <div className="text-xs text-sub">g/ml (metric) · oz/fl oz (imperial)</div>
             </div>
             <div className="join">
@@ -98,7 +98,7 @@ export default function SettingsPage() {
         </div>
 
         <p className="text-xs text-center text-sub mt-4 pb-6">
-          การตั้งค่าทั้งหมดบันทึกใน localStorage โดยอัตโนมัติ
+          All settings are saved automatically in localStorage
         </p>
       </div>
     </div>

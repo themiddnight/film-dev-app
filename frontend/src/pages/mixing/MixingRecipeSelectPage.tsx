@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, ChevronRight } from 'lucide-react'
 import Navbar from '../../components/Navbar'
-import { recipes } from '../../data'
+import { useRecipes } from '../../hooks/useRecipes'
 import { useMixingStore } from '../../store/mixingStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import type { Recipe } from '../../types/recipe'
@@ -13,6 +13,7 @@ export default function MixingRecipeSelectPage() {
   const { setRecipe, setMode } = useMixingStore()
   const mixingMode = useSettingsStore((s) => s.mixingMode)
   const [query, setQuery] = useState('')
+  const { recipes, loading } = useRecipes()
 
   const filtered = recipes.filter((r) =>
     r.name.toLowerCase().includes(query.toLowerCase())
@@ -26,7 +27,7 @@ export default function MixingRecipeSelectPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Navbar title="เลือกสูตร — Mixing Guide" onBack={() => navigate('/')} />
+      <Navbar title="Select Recipe — Mixing Guide" onBack={() => navigate('/')} />
 
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="px-4 pt-4 pb-2">
@@ -34,7 +35,7 @@ export default function MixingRecipeSelectPage() {
             <Search size={16} className="text-muted" />
             <input
               type="text"
-              placeholder="ค้นหาสูตร..."
+              placeholder="Search recipes..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="grow"
@@ -44,19 +45,25 @@ export default function MixingRecipeSelectPage() {
 
         <div className="divider my-0" />
 
-        <p className="text-xs text-sub px-4 pt-2 pb-1">สูตรที่ใช้ล่าสุด</p>
-        {filtered.slice(0, 1).map((r) => (
-          <RecipeRow key={r.id} recipe={r} onSelect={select} isRecent />
-        ))}
+        {loading ? (
+          <div className="text-center text-sub text-sm py-12">Loading...</div>
+        ) : (
+          <>
+            <p className="text-xs text-sub px-4 pt-2 pb-1">Last used</p>
+            {filtered.slice(0, 1).map((r) => (
+              <RecipeRow key={r.id} recipe={r} onSelect={select} isRecent />
+            ))}
 
-        <div className="divider my-0" />
-        <p className="text-xs text-sub px-4 pt-2 pb-1">สูตรทั้งหมด ({filtered.length})</p>
+            <div className="divider my-0" />
+            <p className="text-xs text-sub px-4 pt-2 pb-1">All recipes ({filtered.length})</p>
 
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          {filtered.map((r) => (
-            <RecipeRow key={r.id} recipe={r} onSelect={select} />
-          ))}
-        </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {filtered.map((r) => (
+                <RecipeRow key={r.id} recipe={r} onSelect={select} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

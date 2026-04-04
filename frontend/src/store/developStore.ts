@@ -15,6 +15,20 @@ type DevelopStore = {
   tempCelsius: number
   stepOverrides: Record<string, number>  // stepId → seconds (persisted per recipeId)
 
+  // My Kit — bottle selection (Phase 1b-3: developer-only)
+  selectedBottleId: string | null
+
+  // Kit Playlist — Phase 1c
+  // selectedKitId: DevKit ที่เลือก (null = ไม่ใช้ Kit)
+  // slotSelections: stepId → bottleId (เก็บ per-slot ที่ user เลือกหรือ override จาก Kit)
+  selectedKitId: string | null
+  slotSelections: Record<string, string | null>  // stepId → bottleId | null
+
+  // Last used — persisted เพื่อแสดงใน HomePage
+  // ถ้า lastUsedKitId ไม่ null → แสดง Kit card, ถ้า null → แสดง Recipe card
+  lastUsedRecipeId: string | null
+  lastUsedKitId: string | null
+
   // Runtime state (not persisted)
   currentStepIndex: number
   timerState: TimerState
@@ -29,6 +43,12 @@ type DevelopStore = {
   removeStepOverride: (stepId: string) => void
   clearStepOverrides: () => void
   hasStepOverrides: () => boolean
+  setSelectedBottle: (bottleId: string | null) => void
+
+  // Phase 1c
+  setSelectedKit: (kitId: string | null) => void
+  setSlotSelection: (stepId: string, bottleId: string | null) => void
+  applyKitSlots: (slots: { stepId: string; bottleId: string | null }[]) => void
 
   startSession: () => void
   pauseTimer: () => void
@@ -68,6 +88,11 @@ export const useDevelopStore = create<DevelopStore>()(
       devType: 'N',
       tempCelsius: 26,
       stepOverrides: {},
+      selectedBottleId: null,
+      selectedKitId: null,
+      slotSelections: {},
+      lastUsedRecipeId: null,
+      lastUsedKitId: null,
       currentStepIndex: 0,
       timerState: 'idle',
       remainingSeconds: 0,
@@ -109,13 +134,25 @@ export const useDevelopStore = create<DevelopStore>()(
 
       hasStepOverrides: () => Object.keys(get().stepOverrides).length > 0,
 
+      setSelectedBottle: (bottleId) => set({ selectedBottleId: bottleId }),
+
+      // Phase 1c
+      setSelectedKit: (kitId) => set({ selectedKitId: kitId }),
+      setSlotSelection: (stepId, bottleId) =>
+        set((s) => ({ slotSelections: { ...s.slotSelections, [stepId]: bottleId } })),
+      applyKitSlots: (slots) => {
+        const map: Record<string, string | null> = {}
+        for (const slot of slots) map[slot.stepId] = slot.bottleId
+        set({ slotSelections: map })
+      },
+
       effectiveDuration: (step) => {
         const { stepOverrides, tempCelsius, devType } = get()
         return computeEffectiveDuration(step, devType, tempCelsius, stepOverrides)
       },
 
       startSession: () => {
-        const { recipe, effectiveDuration } = get()
+        const { recipe, selectedKitId, effectiveDuration } = get()
         if (!recipe) return
         const firstStep = recipe.develop_steps[0]
         set({
@@ -123,6 +160,9 @@ export const useDevelopStore = create<DevelopStore>()(
           timerState: 'running',
           remainingSeconds: effectiveDuration(firstStep),
           agitationCount: 0,
+          // Record last used — Kit takes priority; fallback to recipe-only
+          lastUsedRecipeId: recipe.id,
+          lastUsedKitId: selectedKitId,
         })
       },
 
@@ -170,6 +210,8 @@ export const useDevelopStore = create<DevelopStore>()(
         stepOverrides: s.stepOverrides,
         devType: s.devType,
         tempCelsius: s.tempCelsius,
+        lastUsedRecipeId: s.lastUsedRecipeId,
+        lastUsedKitId: s.lastUsedKitId,
       }),
     }
   )

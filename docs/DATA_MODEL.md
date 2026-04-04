@@ -329,9 +329,227 @@ Array of source URLs for the recipe. Displayed as domain-only links in the UI.
 
 ---
 
+## My Kit (Phase 1b+)
+
+### Overview
+
+My Kit คือ "Layer 2 — User's World" ของ app: ข้อมูลที่ user สร้างและ track เอง ต่างจาก Layer 1 (Recipe knowledge) ที่เป็น static/curated data
+
+### ChemicalBottle
+
+```ts
+type ChemicalBottle = {
+  id: string                        // uuid — ไม่ใช่ index
+  developerName: string             // "Divided D-23 Bath A", "HC-110 Working Solution"
+                                    // format: "{RecipeNamePrefix} {BathShortName}"
+  role: 'developer' | 'stop' | 'fixer' | 'wash_aid' | 'wetting_agent'
+                                    // ใช้ filter slot ใน DevKit — ต้องตรงกับ Bath.role ของ recipe
+  defaultDilution?: string          // "1:25" — default แต่ override ได้ต่อ session
+  type: 'one-shot' | 'reusable'
+  mixedAt: string                   // ISO date — วันที่ผสมหรือเปิดขวด
+  shelfLifeDays?: number            // จาก recipe data ถ้ามี — ใช้คำนวณ expiry warning
+  rollsDeveloped: number            // track จาก sessions
+  maxRolls?: number                 // จาก recipe data — warn เมื่อใกล้ครบ
+  notes?: string
+  createdAt: string                 // ISO date
+  updatedAt: string                 // ISO date
+}
+```
+
+**หมายเหตุ `developerName`:** ชื่อถูก qualified ด้วย recipe prefix เสมอ เช่น:
+- Divided D-23 → `"Divided D-23 Bath A"`, `"Divided D-23 Bath B"`
+- HC-110 → `"HC-110 Working Solution"`
+- ไม่ใช้ชื่อสั้น เช่น `"Bath A"` เพราะไม่ระบุว่าเป็นสูตรอะไร
+
+**หมายเหตุ `role`:** ต้องระบุเสมอ — ใช้เพื่อ filter ขวดให้ถูก slot ใน DevKit
+- ปัจจุบัน Mixing Guide Prompt เพิ่มขวดเฉพาะ `role: 'developer'` bath เท่านั้น
+- Phase 1c: เพิ่ม support สำหรับ stop, fixer ถ้าต้องการ
+
+---
+
+### DevKit (Phase 1c)
+
+**ความหมาย:** DevKit คือ "preset สำหรับ session" — user เลือกล่วงหน้าว่าจะใช้ขวดไหนกับ step ไหนของ recipe
+
+```ts
+type DevKit = {
+  id: string                        // uuid
+  name: string                      // ชื่อที่ user ตั้ง เช่น "D-23 + Ilfosol Stop Set"
+  recipeId: string                  // FK ไป Recipe — Kit ผูกกับ recipe 1 ตัว
+  slots: KitSlot[]                  // mapping stepId → bottleId
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**ความสัมพันธ์ Kit → Recipe:**
+- DevKit ผูกกับ Recipe 1 ตัวเสมอ (ผ่าน `recipeId`) — เพราะ step ordering ขึ้นอยู่กับ recipe
+- Recipe กำหนด step structure — Kit เพียง map ขวดไปยัง slots ที่ recipe กำหนด
+- Kit ไม่รู้ว่า two-bath หรือ one-bath — รู้แค่ว่า step ไหนใช้ขวดอะไร ข้อมูลลำดับ (Bath A → Bath B) อยู่ใน Recipe
+
+### KitSlot
+
+**ความหมาย:** Slot คือการ map ระหว่าง develop_step 1 step กับ bottle 1 ขวด
+
+```ts
+type KitSlot = {
+  stepId: string                    // FK ไป DevelopStep.id ใน recipe
+  bottleId: string | null           // FK ไป ChemicalBottle.id — null ถ้ายังไม่ได้เลือก
+}
+```
+
+**วิธีสร้าง slots อัตโนมัติ (auto-generation):**
+1. โหลด recipe ด้วย `recipeId`
+2. Filter `recipe.develop_steps` ที่มี `bath_ref` (steps ที่ต้องใช้น้ำยา)
+3. สร้าง `KitSlot` สำหรับแต่ละ step — `bottleId: null` เริ่มต้น
+4. UI ให้ user เลือก bottle สำหรับแต่ละ slot โดย filter `bottles` ตาม `role` ที่ตรงกับ `Bath.role` ของ step นั้น
+
+**ตัวอย่าง — Divided D-23 (2-bath):**
+```
+slot: stepId="bath-a-dev"  → filter bottles where role='developer'  → เลือก "Divided D-23 Bath A"
+slot: stepId="bath-b-act"  → filter bottles where role='developer'  → เลือก "Divided D-23 Bath B"
+slot: stepId="stop-bath-dev" → filter bottles where role='stop'     → เลือก "Ilfostop"
+slot: stepId="fixer-dev"   → filter bottles where role='fixer'      → เลือก "Ilford Rapid Fixer"
+```
+
+**ตัวอย่าง — HC-110 (1-bath):**
+```
+slot: stepId="hc110-dev"   → filter bottles where role='developer'  → เลือก "HC-110 Working Solution"
+slot: stepId="hc110-stop"  → filter bottles where role='stop'       → เลือก "Ilfostop"
+slot: stepId="hc110-fixer" → filter bottles where role='fixer'      → เลือก "Ilford Rapid Fixer"
+```
+
+**หมายเหตุ:** Bath B ของ Divided D-23 มี `role: 'developer'` ใน recipe (ไม่ใช่ 'activator') เพราะมันยังคงเป็นส่วนของ develop process — UI ระบุประเภทได้จาก `DevelopStep.type: 'activator'` แทน
+
+---
+
+### KitRepository (Phase 1c extension)
+
+เพิ่ม CRUD methods สำหรับ DevKit:
+
+```ts
+interface KitRepository {
+  getKit(): Promise<UserKit>
+  saveBottle(bottle: ChemicalBottle): Promise<void>
+  updateBottle(id: string, updates: Partial<ChemicalBottle>): Promise<void>
+  deleteBottle(id: string): Promise<void>
+  updateRollCount(bottleId: string, rolls: number): Promise<void>
+  // Phase 1c: DevKit CRUD
+  saveDevKit(kit: DevKit): Promise<void>
+  getDevKits(recipeId?: string): Promise<DevKit[]>
+  deleteDevKit(id: string): Promise<void>
+}
+```
+
+**localStorage key:** `my-kit-devkits` (แยกจาก `my-kit` เดิม เพื่อ backward compatibility)
+
+---
+
+### EquipmentProfile
+
+เก็บ default อุปกรณ์ของ user — load ใน session setup แต่ override ได้ต่อ session
+
+```ts
+type EquipmentProfile = {
+  tankType: 'paterson' | 'stainless' | 'jobo' | 'other'
+  tankLabel?: string                // เช่น "Paterson Super System 4"
+  agitationMethod: 'inversion' | 'rotation' | 'rotary' | 'stand'
+  waterHardness: 'soft' | 'medium' | 'hard'  // กำหนดตามพื้นที่ user อยู่
+  usesPreSoak: boolean
+  stopBathType: 'chemical' | 'water'
+}
+```
+
+### UserKit (root)
+
+```ts
+type UserKit = {
+  equipment: EquipmentProfile
+  bottles: ChemicalBottle[]
+  // devKits เก็บแยกใน localStorage key: `my-kit-devkits` — ดู KitRepository
+}
+```
+
+### Storage Strategy (per phase)
+
+| Phase | Storage | Notes |
+|-------|---------|-------|
+| Phase 1b (ปัจจุบัน) | localStorage `my-kit` | Bottles + Equipment Profile ครบแล้ว |
+| Phase 1c (Kit Playlist) | localStorage `my-kit` + `my-kit-devkits` | เพิ่ม DevKit CRUD — throwaway data |
+| Phase 3 (backend) | PostgreSQL via API | Refactor เฉพาะ repository layer — component ไม่รู้เรื่อง |
+
+### Time Compensation for Reusable Developer
+
+เมื่อ user เลือก bottle ที่เป็น reusable ใน session setup:
+
+```
+rolls 1-2:   standard time
+rolls 3-4:   +25%
+rolls 5-6:   +50%
+rolls 7-8:   +75%
+rolls 9+:    warn "developer อาจหมดประสิทธิภาพ"
+```
+
+ค่าเหล่านี้เป็น general guideline — recipe บางตัวอาจ override ด้วยตัวเลขเฉพาะ
+
+---
+
+## Architecture: 2-Layer Design
+
+### Layer 1 — Knowledge (static/curated)
+- Recipes, timing tables, chemical data, agitation specs
+- Phase 1: TypeScript static files
+- Phase 2+: Database (seeded), read via API
+
+### Layer 2 — User's World (dynamic/personal)
+- My Kit (equipment + bottles), session history, settings
+- Phase 1-2: localStorage (throwaway)
+- Phase 3: Database tied to user account
+
+### Repository Pattern
+
+Service layer ใช้ Repository interface เพื่อให้ swap implementation ได้โดยไม่แตะ component:
+
+```ts
+interface RecipeRepository {
+  getAll(): Promise<Recipe[]>
+  getById(id: string): Promise<Recipe | null>
+}
+
+interface KitRepository {
+  getKit(): Promise<UserKit>
+  saveBottle(bottle: ChemicalBottle): Promise<void>
+  updateBottle(id: string, updates: Partial<ChemicalBottle>): Promise<void>
+  deleteBottle(id: string): Promise<void>
+  updateRollCount(bottleId: string, rolls: number): Promise<void>
+  // Phase 1c additions:
+  saveDevKit(kit: DevKit): Promise<void>
+  getDevKits(recipeId?: string): Promise<DevKit[]>
+  deleteDevKit(id: string): Promise<void>
+}
+
+// Phase 2 implementations
+class LocalRecipeRepository implements RecipeRepository { /* reads static data */ }
+class LocalKitRepository implements KitRepository { /* reads/writes localStorage */ }
+
+// Phase 3 implementations (swap in, no component changes)
+class ApiRecipeRepository implements RecipeRepository { /* calls API */ }
+class ApiKitRepository implements KitRepository { /* calls API */ }
+```
+
+### Data Shape Rules (all phases)
+1. ทุก entity ใช้ `id: string` (UUID format) ไม่ใช่ array index
+2. ทุก entity มี `createdAt` และ `updatedAt` (ISO string)
+3. ข้อมูล recipe เก็บเป็น metric เสมอ — แปลงหน่วยเฉพาะตอน display
+4. ไม่ต้อง migrate data เมื่อ Phase 2 → Phase 3 เพราะ app จะยังไม่ production จนกว่า infra พร้อม
+
+---
+
 ## Related Files
 
 - **Type definitions:** `frontend/src/types/recipe.ts`
 - **Recipe data:** `frontend/src/data/divided-d23.ts`, `frontend/src/data/hc110.ts`, `frontend/src/data/d76.ts`
 - **Mixing UI:** `frontend/src/pages/mixing/SelectionScreenPage.tsx`, `ShoppingListPage.tsx`, `MixChecklistPage.tsx`
 - **Mixing state:** `frontend/src/store/mixingStore.ts`
+- **Development variables overview:** `FLOW.md` → "Development Variables" section
+- **Architecture decisions:** `ARCHITECTURE.md` (planned)

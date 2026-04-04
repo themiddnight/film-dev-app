@@ -32,37 +32,37 @@ export const dividedD23: Recipe = {
           amount_per_liter: 100,
           unit: 'g',
           order: 1,
-          note: 'ใส่ก่อน Metol เสมอ — ช่วยละลาย Metol ได้ดีขึ้นและป้องกัน oxidation',
+          note: 'Always add before Metol — helps dissolve Metol and prevents oxidation',
         },
         {
           name: 'Metol',
           amount_per_liter: 7.5,
           unit: 'g',
           order: 2,
-          note: 'ใส่หลัง Sodium Sulphite เสมอ — ห้ามกลับลำดับ',
+          note: 'Always add after Sodium Sulphite — do not reverse the order',
         },
       ],
       mixing_steps: [
         {
-          instruction: 'เทน้ำกลั่น {volume_75pct} ml ลงในภาชนะ (อุณหภูมิห้อง ~25°C)',
+          instruction: 'Pour {volume_75pct} ml of distilled water into container (room temperature ~25°C)',
         },
         {
-          instruction: 'ใส่ Sodium Sulphite {sodium_sulphite} g คนจนละลายหมด',
-          warning: 'ต้องใส่ Sodium Sulphite ก่อน Metol เสมอ',
+          instruction: 'Add Sodium Sulphite {sodium_sulphite} g, stir until fully dissolved',
+          warning: 'Always add Sodium Sulphite before Metol',
           chemicals: [{ name: 'Sodium Sulphite', amount_per_liter: 100, unit: 'g', order: 1 }],
         },
         {
-          instruction: 'ใส่ Metol {metol} g คนจนละลายหมด',
+          instruction: 'Add Metol {metol} g, stir until fully dissolved',
           chemicals: [{ name: 'Metol', amount_per_liter: 7.5, unit: 'g', order: 2 }],
         },
         {
-          instruction: 'เติมน้ำกลั่นให้ครบ {target_volume} ml',
+          instruction: 'Top up with distilled water to {target_volume} ml',
         },
       ],
       storage: {
         shelf_life: '6–12 months',
         container: 'amber bottle, sealed, keep cool',
-        notes: 'เก็บในขวดสีชา อุดฝาแน่น หลีกเลี่ยงแสงและความร้อน',
+        notes: 'Store in amber bottle, tightly sealed, away from light and heat',
       },
     },
     {
@@ -81,20 +81,20 @@ export const dividedD23: Recipe = {
       ],
       mixing_steps: [
         {
-          instruction: 'เทน้ำอุ่น ~50°C จำนวน {volume_50pct} ml ลงในภาชนะ (ช่วยละลาย Borax)',
+          instruction: 'Pour {volume_50pct} ml of warm water ~50°C into container (helps dissolve Borax)',
         },
         {
-          instruction: 'ใส่ Borax {borax} g คนจนละลายหมด',
+          instruction: 'Add Borax {borax} g, stir until fully dissolved',
           chemicals: [{ name: 'Borax', amount_per_liter: 10, unit: 'g', order: 1 }],
         },
         {
-          instruction: 'เติมน้ำกลั่น (อุณหภูมิห้อง) จนครบ {target_volume} ml',
+          instruction: 'Top up with distilled water (room temperature) to {target_volume} ml',
         },
       ],
       storage: {
         shelf_life: '12+ months',
         container: 'any bottle, sealed',
-        notes: 'เสถียรมาก เก็บได้นาน',
+        notes: 'Very stable, long shelf life',
       },
     },
     {
@@ -109,15 +109,15 @@ export const dividedD23: Recipe = {
           amount_per_liter: 22.5,  // midpoint of 20–25g range
           unit: 'g',
           order: 1,
-          note: 'ใช้ช่วง 20–25 g/L ได้ตามที่มี',
+          note: 'Use 20–25 g/L depending on availability',
         },
       ],
       mixing_steps: [
         {
-          instruction: 'เทน้ำ {target_volume} ml ลงในภาชนะ',
+          instruction: 'Pour {target_volume} ml of water into container',
         },
         {
-          instruction: 'ใส่ Potassium Metabisulphite {potassium_metabisulphite} g คนจนละลาย',
+          instruction: 'Add Potassium Metabisulphite {potassium_metabisulphite} g, stir until dissolved',
           chemicals: [{ name: 'Potassium Metabisulphite', amount_per_liter: 22.5, unit: 'g', order: 1 }],
         },
       ],
@@ -125,6 +125,13 @@ export const dividedD23: Recipe = {
         shelf_life: '6 months',
         container: 'sealed bottle',
       },
+    },
+    {
+      id: 'water-stop',
+      name: 'Water Stop',
+      role: 'stop',
+      chemical_format: 'ready_to_use',
+      mixing_required: false,
     },
     {
       id: 'fixer',
@@ -144,29 +151,29 @@ export const dividedD23: Recipe = {
           amount_per_liter: 15,
           unit: 'g',
           order: 2,
-          note: 'ใส่หลัง Sodium Thiosulphate',
+          note: 'Add after Sodium Thiosulphate',
         },
       ],
       mixing_steps: [
         {
-          instruction: 'เทน้ำอุ่น ~40°C จำนวน {volume_75pct} ml ลงในภาชนะ',
+          instruction: 'Pour {volume_75pct} ml of warm water ~40°C into container',
         },
         {
-          instruction: 'ใส่ Sodium Thiosulphate {sodium_thiosulphate} g คนจนละลายหมด',
+          instruction: 'Add Sodium Thiosulphate {sodium_thiosulphate} g, stir until fully dissolved',
           chemicals: [{ name: 'Sodium Thiosulphate (Hypo)', amount_per_liter: 250, unit: 'g', order: 1 }],
         },
         {
-          instruction: 'ใส่ Sodium Sulphite {sodium_sulphite_fixer} g คนจนละลาย',
+          instruction: 'Add Sodium Sulphite {sodium_sulphite_fixer} g, stir until dissolved',
           chemicals: [{ name: 'Sodium Sulphite', amount_per_liter: 15, unit: 'g', order: 2 }],
         },
         {
-          instruction: 'เติมน้ำให้ครบ {target_volume} ml ปล่อยให้เย็นก่อนใช้',
+          instruction: 'Top up with water to {target_volume} ml, let cool before use',
         },
       ],
       storage: {
         shelf_life: '3–6 months',
         container: 'sealed bottle',
-        notes: 'ทิ้งเมื่อเริ่มเป็นสีเหลืองเข้มหรือ fix ช้าลงชัดเจน',
+        notes: 'Discard when solution turns dark yellow or fixing slows noticeably',
       },
     },
   ],
@@ -185,8 +192,8 @@ export const dividedD23: Recipe = {
         interval_seconds: 60,
         duration_seconds: 5,
       },
-      warnings: ['ห้าม pre-wet ฟิล์ม — เทน้ำยาตรงๆ'],
-      transition_warning: 'เท Bath A กลับขวดทันที — ห้ามล้างน้ำก่อนเท Bath B',
+      warnings: ['Do not pre-wet film — pour developer directly'],
+      transition_warning: 'Pour Bath A back into bottle immediately — do not rinse before pouring Bath B',
       temp_table: {
         20: { 'N-1': 300, 'N': 360, 'N+1': 480 },
         21: { 'N-1': 270, 'N': 330, 'N+1': 450 },
@@ -204,14 +211,14 @@ export const dividedD23: Recipe = {
       name: 'Bath B — Activator',
       type: 'activator',
       bath_ref: 'bath-b',
-      duration_seconds: 300,  // 5:00 — คงที่เสมอ ไม่ขึ้นกับอุณหภูมิ
+      duration_seconds: 300,  // 5:00 — always fixed, independent of temperature
       agitation: {
         initial_seconds: 30,
         interval_seconds: 60,
         duration_seconds: 5,
       },
-      warnings: ['เวลา Bath B คงที่ 5 นาที ไม่ขึ้นกับอุณหภูมิหรือ N/N+1'],
-      transition_warning: 'เท Bath B กลับขวด — ล้างน้ำสั้นๆ 30 วินาทีก่อน Stop Bath',
+      warnings: ['Bath B time is fixed at 5 min — independent of temperature or N/N+1'],
+      transition_warning: 'Pour Bath B back into bottle — rinse briefly for 30 seconds before Stop Bath',
     },
     {
       id: 'water-rinse',
@@ -241,14 +248,14 @@ export const dividedD23: Recipe = {
       name: 'Fixer',
       type: 'fixer',
       bath_ref: 'fixer',
-      duration_seconds: 480,  // 8:00 default — user override ได้
+      duration_seconds: 480,  // 8:00 default — user can override
       duration_override_key: 'divided-d23.fixer.duration',
       agitation: {
         initial_seconds: 30,
         interval_seconds: 60,
         duration_seconds: 5,
       },
-      warnings: ['วัด clearing time จริงแล้วคูณ 2 เพื่อความปลอดภัย'],
+      warnings: ['Measure actual clearing time and multiply by 2 for safety'],
     },
     {
       id: 'final-wash',
@@ -263,10 +270,10 @@ export const dividedD23: Recipe = {
     },
     {
       id: 'dry',
-      name: 'ผึ่งแห้ง',
+      name: 'Hang to Dry',
       type: 'dry',
       duration_seconds: 'variable',
-      warnings: ['ผึ่งแห้งในที่ไม่มีฝุ่น 1–2 ชั่วโมงก่อนตัดฟิล์ม'],
+      warnings: ['Hang to dry in a dust-free area for 1–2 hours before cutting film'],
     },
   ],
 }
