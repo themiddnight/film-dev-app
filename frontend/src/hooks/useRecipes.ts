@@ -21,11 +21,13 @@ export function useRecipes(filter: RecipeFilter): UseRecipesState {
     error: null,
   })
 
+  const { author_type, search, step_type, visibility, film } = filter
+
   useEffect(() => {
     let cancelled = false
 
     recipeRepo
-      .getAll(filter)
+      .getAll({ author_type, search, step_type, visibility, film })
       .then((recipes) => {
         if (!cancelled) setState({ recipes, loading: false, error: null })
       })
@@ -36,7 +38,7 @@ export function useRecipes(filter: RecipeFilter): UseRecipesState {
     return () => {
       cancelled = true
     }
-  }, [filter.author_type, filter.search, filter.step_type, filter.visibility, filter.film])
+  }, [author_type, search, step_type, visibility, film])
 
   return state
 }

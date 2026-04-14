@@ -23,9 +23,10 @@ export function useInventory(filter?: InventoryFilter) {
     } catch (err: unknown) {
       setState({ items: [], loading: false, error: String(err) })
     }
-  }, [filter?.search, filter?.status, filter?.step_type])
+  }, [filter])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void reload()
   }, [reload])
 

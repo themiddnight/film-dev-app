@@ -19,12 +19,14 @@ type DevSessionStore = {
   started_at: string | null
   completed_at: string | null
   inventory_updates: DevSession['inventory_updates']
+  selected_bath_b_item_id: string | null
 
   setSource: (source: DevSource) => void
   clearSource: () => void
   setConfig: (config: Partial<Pick<DevSessionStore, 'film_format' | 'rolls_count' | 'temperature_celsius' | 'dev_type' | 'agitation_method'>>) => void
   startTimerSession: (targetSeconds: number) => void
   completeTimerSession: (updates: DevSession['inventory_updates']) => void
+  setSelectedBathBItemId: (id: string | null) => void
   resetRuntime: () => void
   toSessionSource: (kitName?: string) => SessionSource | null
 }
@@ -42,6 +44,7 @@ export const useDevSessionStore = create<DevSessionStore>()(
       started_at: null,
       completed_at: null,
       inventory_updates: [],
+      selected_bath_b_item_id: null,
 
       setSource: (source) => set({ source }),
       clearSource: () => set({ source: null }),
@@ -62,12 +65,15 @@ export const useDevSessionStore = create<DevSessionStore>()(
           inventory_updates: updates,
         }),
 
+      setSelectedBathBItemId: (id) => set({ selected_bath_b_item_id: id }),
+
       resetRuntime: () =>
         set({
           target_duration_seconds: 0,
           started_at: null,
           completed_at: null,
           inventory_updates: [],
+          selected_bath_b_item_id: null,
         }),
 
       toSessionSource: (kitName) => {

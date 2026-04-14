@@ -1,12 +1,16 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { PushPull } from '../types/recipe'
 
 type MixingMode = 'prep' | 'step-by-step'
+export type TwoBathMixSelection = 'both' | 'bath_a' | 'bath_b'
 
 type MixingStore = {
   selectedRecipeIds: string[]
   targetVolumeMl: number
   selectedDilutions: Record<string, { concentrate_parts: number; water_parts: number; label?: string }>
+  twoBathSelections: Record<string, TwoBathMixSelection>
+  twoBathNLevels: Record<string, PushPull>
   mode: MixingMode
   currentRecipeIndex: number
   checkedMap: Record<string, boolean>
@@ -15,6 +19,8 @@ type MixingStore = {
   setMode: (mode: MixingMode) => void
   setTargetVolume: (ml: number) => void
   setDilution: (recipeId: string, dilution: { concentrate_parts: number; water_parts: number; label?: string }) => void
+  setTwoBathSelection: (recipeId: string, selection: TwoBathMixSelection) => void
+  setTwoBathNLevel: (recipeId: string, level: PushPull) => void
   setCurrentRecipeIndex: (index: number) => void
   toggleChecked: (key: string) => void
   resetProgress: () => void
@@ -27,6 +33,8 @@ export const useMixingStore = create<MixingStore>()(
       selectedRecipeIds: [],
       targetVolumeMl: 1000,
       selectedDilutions: {},
+      twoBathSelections: {},
+      twoBathNLevels: {},
       mode: 'prep',
       currentRecipeIndex: 0,
       checkedMap: {},
@@ -41,6 +49,20 @@ export const useMixingStore = create<MixingStore>()(
             [recipeId]: dilution,
           },
         })),
+      setTwoBathSelection: (recipeId, selection) =>
+        set((prev) => ({
+          twoBathSelections: {
+            ...prev.twoBathSelections,
+            [recipeId]: selection,
+          },
+        })),
+      setTwoBathNLevel: (recipeId, level) =>
+        set((prev) => ({
+          twoBathNLevels: {
+            ...prev.twoBathNLevels,
+            [recipeId]: level,
+          },
+        })),
       setCurrentRecipeIndex: (index) => set({ currentRecipeIndex: index }),
       toggleChecked: (key) => set((prev) => ({ checkedMap: { ...prev.checkedMap, [key]: !prev.checkedMap[key] } })),
 
@@ -51,6 +73,8 @@ export const useMixingStore = create<MixingStore>()(
           selectedRecipeIds: [],
           targetVolumeMl: 1000,
           selectedDilutions: {},
+          twoBathSelections: {},
+          twoBathNLevels: {},
           mode: 'prep',
           currentRecipeIndex: 0,
           checkedMap: {},

@@ -26,6 +26,7 @@ export function useRecentSessions(limit = 5): SessionsState & { reload: () => Pr
   }, [limit])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void reload()
   }, [reload])
 
