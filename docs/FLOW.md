@@ -178,6 +178,10 @@ Mix page
  → Summary screen
  │ แสดง recipes ที่เลือกทั้งหมด + ingredients count
  │ เลือก Target Volume (ml) สำหรับ dilution scaling
+ │ ถ้า recipe เป็น two-bath: เลือกก่อนเริ่มว่า
+ │   - Mix both baths (A + B)
+ │   - Mix Bath A only
+ │   - Mix Bath B only
  │
  │ ┌─ [Prep Mode]
  │ │ "Prepare all chemicals first, then mix them one by one"
@@ -200,6 +204,9 @@ Mix page
  │ → Select checkboxes: recipes จะบันทึกเป็น bottle
  │ → [Save to Inventory] → บันทึกทั้งหมด
  │ จาก: name (recipe name), mixed_date, bottle_type, step_type
+ │ two-bath recipes:
+ │   - both → save 2 bottles (Bath A + Bath B)
+ │   - A only / B only → save only selected bath
  │
  └── Step-by-Step Mode path (วนลูป ทีละ recipe):
  สำหรับแต่ละ recipe ที่เลือก (เรียงตาม order):
@@ -286,6 +293,10 @@ Kits page (`/kits`)
  dropdown เลือก Inventory Item → filter ตาม step_type ที่ตรงกัน
  (หลาย kit ใช้ item เดียวกันได้ — เช่น fixer ร่วม)
 
+ สำหรับ developer two-bath:
+ slot ถูกแยกชัดเจนเป็น Developer Bath A และ Developer Bath B
+ dropdown ของแต่ละช่อง filter ตาม role (A เห็นเฉพาะขวด A, B เห็นเฉพาะขวด B)
+
  → Kit Validation (ก่อน Save):
  ❌ developer slot ว่าง → block save
  ❌ fixer slot ว่าง → block save
@@ -297,9 +308,10 @@ Kits page (`/kits`)
 ```
 
 **Two-bath developer:**
-- ถ้า inventory item ที่เลือกใน developer slot มี `recipe.constraints.is_two_bath === true`
- → auto-add developer slot ที่สองสำหรับ Bath B
- → ทั้งสอง slot อยู่ติดกันใน order เสมอ ห้ามแทรก stop ระหว่างกัน
+- ถ้าเลือก developer ขวด Bath A ที่ recipe เป็น two-bath
+ → auto-add developer slot ที่สองเป็น Bath B
+ → ทั้งสอง slot เป็น required และอยู่ติดกันใน order เสมอ
+ → ห้ามแทรก stop ระหว่างกัน
 
 ---
 
@@ -342,6 +354,7 @@ Session Setup
 
  → ระบบคำนวณ:
  development time จาก temp_table × dev_type
+ ถ้า recipe เป็น two-bath: ใช้เวลารวมจาก develop steps (Bath A + Bath B)
  ถ้า developer เป็น reusable → +time compensation
  ถ้า agitation method เป็น rotary → × 0.85
 

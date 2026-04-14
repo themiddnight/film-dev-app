@@ -273,6 +273,10 @@ type InventoryItem = {
  step_type: RecipeStepType
  }
  step_type: RecipeStepType // copy จาก recipe — ใช้ filter slot ใน Kit
+ developer_bath_role?: 'single' | 'bath_a' | 'bath_b'
+ // ใช้เมื่อ step_type = 'developer'
+ // single = developer ปกติ 1 ขวด
+ // bath_a / bath_b = developer แบบ two-bath แยกขวด track อายุคนละตัว
  bottle_type: 'one-shot' | 'reusable'
 
  // Lifecycle
@@ -320,6 +324,7 @@ type Kit = {
 type KitSlot = {
  id: string // uuid
  slot_type: KitSlotType // ประเภทของ slot
+ developer_slot_role?: 'bath_a' | 'bath_b' // ใช้เมื่อ slot_type = 'developer' และเป็น two-bath
  inventory_item_id: string | null // FK → InventoryItem — null ถ้ายังไม่เลือก
  order: number // ลำดับ step ใน kit (0-based)
  optional: boolean // wash_aid, wetting_agent เป็น optional
@@ -338,6 +343,8 @@ type KitSlotType =
 - Two-bath developer: ต้องมี 2 developer slots เรียงต่อกัน (Bath A → Bath B)
 - ห้ามมี stop slot ระหว่าง developer slots ใน two-bath
 - App validate ก่อน session โดย check `recipe.constraints.is_two_bath`
+- Slot filter: Bath A slot เลือกได้เฉพาะ inventory `developer_bath_role = bath_a`
+- Slot filter: Bath B slot เลือกได้เฉพาะ inventory `developer_bath_role = bath_b`
 
 **ข้อสำคัญเรื่อง Shared Inventory:**
 - หลาย Kit สามารถ point ไป InventoryItem เดียวกันได้
