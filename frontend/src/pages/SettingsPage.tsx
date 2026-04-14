@@ -1,131 +1,136 @@
-// pages/SettingsPage.tsx — 07 · Settings
+import { useEffect, useState } from 'react'
+import { Download, RefreshCw, Settings } from 'lucide-react'
 import Navbar from '../components/Navbar'
-import { useSettingsStore } from '../store/settingsStore'
+import { useEquipmentStore } from '../store/equipmentStore'
+import { usePwaStore } from '../store/pwaStore'
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}
 
 export default function SettingsPage() {
-  const s = useSettingsStore()
+  const { equipment, setEquipment } = useEquipmentStore()
+  const { isRegistered, isOfflineReady, hasUpdate, reloadWithUpdate } = usePwaStore()
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [isInstalled, setIsInstalled] = useState(false)
+
+  useEffect(() => {
+    const displayMode = window.matchMedia('(display-mode: standalone)')
+    setIsInstalled(displayMode.matches)
+
+    const onBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault()
+      setInstallPrompt(event as BeforeInstallPromptEvent)
+    }
+
+    const onInstalled = () => {
+      setInstallPrompt(null)
+      setIsInstalled(true)
+    }
+
+    const onModeChange = (event: MediaQueryListEvent) => {
+      setIsInstalled(event.matches)
+    }
+
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+    window.addEventListener('appinstalled', onInstalled)
+    displayMode.addEventListener('change', onModeChange)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', onInstalled)
+      displayMode.removeEventListener('change', onModeChange)
+    }
+  }, [])
+
+  async function onInstallApp() {
+    if (!installPrompt) return
+    await installPrompt.prompt()
+    const choice = await installPrompt.userChoice
+    if (choice.outcome !== 'accepted') return
+    setInstallPrompt(null)
+  }
 
   return (
     <div className="flex flex-col h-full">
-      <Navbar title="⚙️ Settings" />
+      <Navbar title="Settings" subtitle="Equipment profile" showBack={false} left={<Settings size={18} className="text-sub" />} />
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-1">
-
-        {/* AGITATION REMINDER */}
-        <p className="text-xs text-sub uppercase tracking-widest px-1 pt-2 pb-1">
-          Agitation Reminder
-        </p>
-        <div className="card bg-base-200">
-          <div className="card-body p-0 divide-y divide-base-300">
-            <ToggleRow
-              label="Sound"
-              desc="Beep when it's time to agitate"
-              checked={s.sound}
-              onChange={(v) => s.update({ sound: v })}
-            />
-            <ToggleRow
-              label="Vibrate"
-              desc="On supported devices"
-              checked={s.vibrate}
-              onChange={(v) => s.update({ vibrate: v })}
-            />
-            <ToggleRow
-              label="Screen Flash"
-              desc="Brief flash on the screen"
-              checked={s.screenFlash}
-              onChange={(v) => s.update({ screenFlash: v })}
-            />
-          </div>
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+        <div>
+          <label className="text-xs text-sub block mb-1">Tank type</label>
+          <select
+            className="select select-bordered w-full"
+            value={equipment.tank_type}
+            onChange={(e) => setEquipment({ tank_type: e.target.value as 'paterson' | 'stainless' | 'jobo' | 'other' })}
+          >
+            <option value="paterson">paterson</option>
+            <option value="stainless">stainless</option>
+            <option value="jobo">jobo</option>
+            <option value="other">other</option>
+          </select>
         </div>
 
-        {/* UNITS */}
-        <p className="text-xs text-sub uppercase tracking-widest px-1 pt-4 pb-1">Units</p>
-        <div className="card bg-base-200">
-          <div className="card-body py-4 px-5 flex-row items-center justify-between">
-            <div>
-              <div className="font-medium text-sm">Units</div>
-              <div className="text-xs text-sub">g/ml (metric) · oz/fl oz (imperial)</div>
-            </div>
-            <div className="join">
-              <button
-                className={`join-item btn btn-sm ${s.unit === 'metric' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => s.update({ unit: 'metric' })}
-              >
-                g/ml
-              </button>
-              <button
-                className={`join-item btn btn-sm ${s.unit === 'imperial' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => s.update({ unit: 'imperial' })}
-              >
-                oz
-              </button>
-            </div>
-          </div>
+        <div>
+          <label className="text-xs text-sub block mb-1">Default agitation method</label>
+          <select
+            className="select select-bordered w-full"
+            value={equipment.agitation_method}
+            onChange={(e) =>
+              setEquipment({ agitation_method: e.target.value as 'inversion' | 'rotation' | 'stand' | 'rotary' })
+            }
+          >
+            <option value="inversion">inversion</option>
+            <option value="rotation">rotation</option>
+            <option value="rotary">rotary</option>
+            <option value="stand">stand</option>
+          </select>
         </div>
 
-        {/* APPEARANCE */}
-        <p className="text-xs text-sub uppercase tracking-widest px-1 pt-4 pb-1">Appearance</p>
-        <div className="card bg-base-200">
-          <div className="card-body py-4 px-5 flex-row items-center justify-between">
-            <div>
-              <div className="font-medium text-sm">Theme</div>
-              <div className="text-xs text-sub">{s.theme === 'dark' ? 'Dark (default)' : 'Light'}</div>
-            </div>
-            <div className="join">
-              <button
-                className={`join-item btn btn-sm ${s.theme === 'dark' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => s.update({ theme: 'dark' })}
-              >
-                🌙
-              </button>
-              <button
-                className={`join-item btn btn-sm ${s.theme === 'light' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => s.update({ theme: 'light' })}
-              >
-                ☀️
-              </button>
-            </div>
-          </div>
+        <div>
+          <label className="text-xs text-sub block mb-1">Water hardness</label>
+          <select
+            className="select select-bordered w-full"
+            value={equipment.water_hardness}
+            onChange={(e) => setEquipment({ water_hardness: e.target.value as 'soft' | 'medium' | 'hard' })}
+          >
+            <option value="soft">soft</option>
+            <option value="medium">medium</option>
+            <option value="hard">hard</option>
+          </select>
         </div>
 
-        {/* ABOUT */}
-        <p className="text-xs text-sub uppercase tracking-widest px-1 pt-4 pb-1">About</p>
-        <div className="card bg-base-200">
-          <div className="card-body py-4 px-5">
-            <div className="font-medium text-sm">Film Dev Guidance</div>
-            <div className="text-xs text-sub">v0.1.0 · Phase 1</div>
-          </div>
+        <div className="text-xs text-sub">
+          Dev setup can override these values temporarily for each session and will not save back here.
         </div>
 
-        <p className="text-xs text-center text-sub mt-4 pb-6">
-          All settings are saved automatically in localStorage
-        </p>
+        <div className="divider my-1" />
+
+        <div className="card bg-base-200">
+          <div className="card-body p-4 space-y-3">
+            <h3 className="font-semibold">App</h3>
+            <div className="text-sm text-sub">
+              <div>Service worker: {isRegistered ? 'ready' : 'not ready yet'}</div>
+              <div>Offline shell: {isOfflineReady ? 'available' : 'preparing'}</div>
+              <div>Installed: {isInstalled ? 'yes' : 'no'}</div>
+            </div>
+
+            {!isInstalled && installPrompt && (
+              <button className="btn btn-outline btn-sm" onClick={() => void onInstallApp()}>
+                <Download size={14} /> Install app
+              </button>
+            )}
+
+            {hasUpdate && (
+              <button className="btn btn-primary btn-sm" onClick={() => void reloadWithUpdate()}>
+                <RefreshCw size={14} /> Update app now
+              </button>
+            )}
+
+            {!hasUpdate && <div className="text-xs text-sub">App is on the latest available version.</div>}
+          </div>
+        </div>
       </div>
-    </div>
-  )
-}
-
-// ─── sub-component ────────────────────────────────────────────────────────────
-function ToggleRow({
-  label, desc, checked, onChange,
-}: {
-  label: string
-  desc: string
-  checked: boolean
-  onChange: (v: boolean) => void
-}) {
-  return (
-    <div className="flex items-center justify-between px-5 py-4">
-      <div>
-        <div className="font-medium text-sm">{label}</div>
-        <div className="text-xs text-sub">{desc}</div>
-      </div>
-      <input
-        type="checkbox"
-        className="toggle toggle-primary"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 // types/recipe.ts
-// Data model ตาม FLOW.md — รองรับ Phase 1 (Divided D-23) และ Phase 2+
+// Data model ตาม FLOW.md — current  model (with optional compatibility fields)
 
 export type Chemical = {
   name: string
@@ -16,11 +16,89 @@ export type MixingStep = {
 }
 
 export type ChemicalFormat =
-  | 'raw_powder'
+  | 'powder_raw'
   | 'powder_concentrate'
   | 'liquid_concentrate'
   | 'ready_to_use'
   | 'diy'
+
+export type RecipeStepType =
+  | 'developer'
+  | 'stop'
+  | 'fixer'
+  | 'wash_aid'
+  | 'wetting_agent'
+
+export type FilmCompatibility = {
+  scope: 'general' | 'specific'
+  films?: string[]
+  iso_range?: { min: number; max: number }
+  notes?: string
+}
+
+export type DilutionOption = {
+  label?: string
+  concentrate_parts: number
+  water_parts: number
+  notes?: string
+}
+
+export type DilutionSpec =
+  | { type: 'fixed'; concentrate_parts: number; water_parts: number; label?: string }
+  | { type: 'preset'; options: DilutionOption[]; default_label?: string }
+  | {
+      type: 'open'
+      suggested_ratios: DilutionOption[]
+      min_water_parts?: number
+      max_water_parts?: number
+    }
+
+export type PushPull = 'N-2' | 'N-1' | 'N' | 'N+1' | 'N+2'
+
+export type DevelopTiming = {
+  type: 'fixed' | 'temp_table' | 'push_pull_table' | 'combined'
+  fixed_seconds?: number
+  temp_table?: Record<number, Partial<Record<PushPull, number>>>
+  push_pull_table?: {
+    base_temp_celsius: number
+    entries: Partial<Record<PushPull, number>>
+  }
+}
+
+export type AgitationSpec =
+  | { type: 'inversion'; initial_seconds: number; interval_seconds: number; duration_seconds: number }
+  | { type: 'stand' }
+  | { type: 'semi_stand'; initial_seconds: number }
+  | { type: 'rotary'; rpm?: number }
+  | { type: 'custom'; description: string }
+
+export type RecipeConstraints = {
+  required_fixer_type?: 'standard' | 'alkaline'
+  is_two_bath?: boolean
+  fixer_grade?: 'film' | 'paper'
+  reuse_compensation?: {
+    max_rolls?: number
+    time_increase_per_roll?: number
+    notes?: string
+  }
+  agitation_time_multipliers?: {
+    inversion?: number
+    rotary?: number
+    stand?: number
+  }
+  min_volume_ml?: {
+    '35mm_1roll'?: number
+    '35mm_2roll'?: number
+    '120_1roll'?: number
+    '4x5_1sheet'?: number
+  }
+}
+
+export type StorageInfo = {
+  shelf_life?: string
+  container?: string
+  notes?: string
+}
 
 export type BathRole =
   | 'developer'
@@ -52,9 +130,11 @@ export type AgitationSchedule = {
 }
 
 export type TempTableEntry = {
+  'N-2'?: number
   'N-1': number
   'N': number
   'N+1': number
+  'N+2'?: number
 }
 
 export type DevelopStep = {
@@ -80,16 +160,43 @@ export type DevelopStep = {
 }
 
 export type Recipe = {
-  id: string                // "divided-d23"
-  name: string              // "Divided D-23 + Borax"
+  id: string
+  name: string
   description: string
   author: { id: string; name: string }
-  visibility: 'public' | 'private'
-  tags: string[]            // ["two-bath", "low-contrast", "tropical"]
-  film_types: string[]      // ["any"] หรือ ["Kodak Tri-X", "Ilford HP5"]
-  base_volume_ml: number    // 1000 — ใช้ scale chemical amounts
-  optimal_temp_range: { min: number; max: number }
-  references?: string[]     // array of URLs — แสดงเป็น domain links
-  baths: Bath[]             // สำหรับ Mixing Guide
-  develop_steps: DevelopStep[]  // สำหรับ Develop Session
+  visibility: 'public' | 'private' | 'published'
+  tags: string[]
+  film_types?: string[]
+  base_volume_ml?: number
+  optimal_temp_range?: { min: number; max: number }
+  references?: string[]
+  baths?: Bath[]
+  develop_steps?: DevelopStep[]
+
+  //  fields
+  slug?: string
+  step_type?: RecipeStepType
+  film_compatibility?: FilmCompatibility
+  chemical_format?: ChemicalFormat
+  dilution?: DilutionSpec
+  chemicals?: Chemical[]
+  mixing_steps?: MixingStep[]
+  optimal_temp?: { min: number; max: number }
+  develop_timing?: DevelopTiming
+  agitation?: AgitationSpec
+  storage?: StorageInfo
+  constraints?: RecipeConstraints
+  author_id?: string
+  author_type?: 'system' | 'personal' | 'community'
+  status?: 'draft' | 'pending_review' | 'published'
+  created_at?: string
+  updated_at?: string
+}
+
+export type RecipeFilter = {
+  step_type?: RecipeStepType
+  author_type?: 'system' | 'personal' | 'community'
+  visibility?: 'private' | 'published'
+  film?: string
+  search?: string
 }

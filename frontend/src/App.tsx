@@ -1,54 +1,27 @@
 // App.tsx — router setup
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useSettingsStore } from "./store/settingsStore";
-import { useDevelopStore } from "./store/developStore";
-import { useMixingStore } from "./store/mixingStore";
 import { useEffect } from "react";
-import type { ReactNode } from "react";
 
-// Pages — Develop Session
-import HomePage from "./pages/HomePage";
-import RecipeSelectPage from "./pages/develop/RecipeSelectPage";
-import StepPreviewPage from "./pages/develop/StepPreviewPage";
-import ActiveTimerPage from "./pages/develop/ActiveTimerPage";
-import StepCompletePage from "./pages/develop/StepCompletePage";
-import AllDonePage from "./pages/develop/AllDonePage";
+// Pages
+import RecipesPage from "./pages/RecipesPage";
+import RecipeDetailPage from "./pages/RecipeDetailPage";
+import CreateRecipeFullPage from "./pages/CreateRecipeFullPage";
+import EditRecipePage from "./pages/EditRecipePage";
+import KitsPage from "./pages/KitsPage";
+import DevEntryPage from "./pages/dev/DevEntryPage";
+import DevSetupPage from "./pages/dev/DevSetupPage";
+import DevTimerPage from "./pages/dev/DevTimerPage";
+import DevDonePage from "./pages/dev/DevDonePage";
+import MixSelectPage from "./pages/mix/MixSelectPage";
+import MixSummaryPage from "./pages/mix/MixSummaryPage";
+import MixPrepPage from "./pages/mix/MixPrepPage";
+import MixMixPage from "./pages/mix/MixMixPage";
+import MixStepByStepPage from "./pages/mix/MixStepByStepPage";
+import MixDonePage from "./pages/mix/MixDonePage";
+import MixShoppingPage from "./pages/mix/MixShoppingPage";
 import SettingsPage from "./pages/SettingsPage";
-
-// Pages — Mixing Guide
-import MixingRecipeSelectPage from "./pages/mixing/MixingRecipeSelectPage";
-import SelectionScreenPage from "./pages/mixing/SelectionScreenPage";
-import ShoppingListPage from "./pages/mixing/ShoppingListPage";
-import MixChecklistPage from "./pages/mixing/MixChecklistPage";
-
-// Pages — My Kit
-import MyKitPage from "./pages/MyKitPage";
-import CreateKitPage from "./pages/CreateKitPage";
-
-// ── Route guards ────────────────────────────────────────────────────────────
-// Redirect to fallback if the required store state is missing.
-// This catches direct URL access, page refresh mid-session, and bookmark entry.
-
-function RequireDevelopRecipe({ children }: { children: ReactNode }) {
-  const recipe = useDevelopStore((s) => s.recipe);
-  return recipe ? <>{children}</> : <Navigate to="/" replace />;
-}
-
-function RequireActiveTimer({ children }: { children: ReactNode }) {
-  const recipe = useDevelopStore((s) => s.recipe);
-  const timerState = useDevelopStore((s) => s.timerState);
-  // Timer must have been started; 'idle' means no active session
-  return recipe && timerState !== "idle" ? (
-    <>{children}</>
-  ) : (
-    <Navigate to="/" replace />
-  );
-}
-
-function RequireMixingRecipe({ children }: { children: ReactNode }) {
-  const recipe = useMixingStore((s) => s.recipe);
-  return recipe ? <>{children}</> : <Navigate to="/mixing/recipe" replace />;
-}
+import MainLayout from "./components/MainLayout";
 
 // ── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
@@ -65,76 +38,32 @@ export default function App() {
   return (
     // max-width layout — mobile-first, centered on larger screens
     <div className="h-dvh flex justify-center bg-base-200">
-      <div className="w-full max-w-[430px] h-dvh bg-base-100 relative overflow-hidden flex flex-col">
+      <div className="w-full max-w-275 h-dvh bg-base-100 relative overflow-hidden flex flex-col">
         <BrowserRouter>
           <Routes>
-            {/* Root */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/my-kit" element={<MyKitPage />} />
-            <Route path="/my-kit/create-kit" element={<CreateKitPage />} />
-
-            {/* Develop Session — recipe required */}
-            <Route path="/develop/recipe" element={<RecipeSelectPage />} />
-            <Route
-              path="/develop/preview"
-              element={
-                <RequireDevelopRecipe>
-                  <StepPreviewPage />
-                </RequireDevelopRecipe>
-              }
-            />
-            <Route
-              path="/develop/timer"
-              element={
-                <RequireActiveTimer>
-                  <ActiveTimerPage />
-                </RequireActiveTimer>
-              }
-            />
-            <Route
-              path="/develop/step-complete"
-              element={
-                <RequireActiveTimer>
-                  <StepCompletePage />
-                </RequireActiveTimer>
-              }
-            />
-            <Route
-              path="/develop/done"
-              element={
-                <RequireDevelopRecipe>
-                  <AllDonePage />
-                </RequireDevelopRecipe>
-              }
-            />
-
-            {/* Mixing Guide — recipe required after selection */}
-            <Route path="/mixing/recipe" element={<MixingRecipeSelectPage />} />
-            <Route
-              path="/mixing/selection"
-              element={
-                <RequireMixingRecipe>
-                  <SelectionScreenPage />
-                </RequireMixingRecipe>
-              }
-            />
-            <Route
-              path="/mixing/shopping"
-              element={
-                <RequireMixingRecipe>
-                  <ShoppingListPage />
-                </RequireMixingRecipe>
-              }
-            />
-            <Route
-              path="/mixing/checklist"
-              element={
-                <RequireMixingRecipe>
-                  <MixChecklistPage />
-                </RequireMixingRecipe>
-              }
-            />
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<Navigate to="dev" replace />} />
+              <Route path="dev" element={<DevEntryPage />} />
+              <Route path="dev/setup" element={<DevSetupPage />} />
+              <Route path="dev/timer" element={<DevTimerPage />} />
+              <Route path="dev/done" element={<DevDonePage />} />
+              <Route path="mix" element={<MixSelectPage />} />
+              <Route path="mix/summary" element={<MixSummaryPage />} />
+              <Route path="mix/shopping" element={<MixShoppingPage />} />
+              <Route path="mix/prep" element={<MixPrepPage />} />
+              <Route path="mix/mix" element={<MixMixPage />} />
+              <Route path="mix/steps" element={<MixStepByStepPage />} />
+              <Route path="mix/done" element={<MixDonePage />} />
+              <Route path="recipes" element={<RecipesPage />} />
+              <Route path="recipes/new" element={<Navigate to="/recipes/new-full" replace />} />
+              <Route path="recipes/new-full" element={<CreateRecipeFullPage />} />
+              <Route path="recipes/:id" element={<RecipeDetailPage />} />
+              <Route path="recipes/:id/edit" element={<EditRecipePage />} />
+              <Route path="inventory" element={<Navigate to="/kits" replace />} />
+              <Route path="kits" element={<KitsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </div>

@@ -1,7 +1,7 @@
 # Back Button Policy
 
-> **Status:** Finalized · Phase 1
-> **Last updated:** 2026-03-30
+> **Status:** Finalized · Current frontend
+> **Last updated:** 2026-04-14
 
 กฎหลัก: **"ฟิล์มอยู่ในน้ำยา = ห้าม back ตรงๆ"**
 
@@ -39,9 +39,9 @@
 ### 03 · Step Preview
 - ถ้าผู้ใช้ **ยังไม่แก้เวลาใดๆ** → back ได้ทันที
 - ถ้าผู้ใช้ **แก้เวลาไปแล้ว** (มี custom overrides) → แสดง confirm dialog:
-  > "ออกจากหน้านี้? การแก้ไขเวลาจะถูกยกเลิก"
-  - ยืนยัน → clear overrides จาก store → navigate back
-  - ยกเลิก → อยู่หน้าเดิม
+ > "ออกจากหน้านี้? การแก้ไขเวลาจะถูกยกเลิก"
+ - ยืนยัน → clear overrides จาก store → navigate back
+ - ยกเลิก → อยู่หน้าเดิม
 - Implementation: ตรวจ `hasUnsavedOverrides` จาก store ก่อน navigate
 
 ### 04 · Active Timer
@@ -52,16 +52,16 @@
 
 **สถานะ paused:**
 - แสดง dialog:
-  > "⚠️ ออกจาก session?
-  > ฟิล์มยังอยู่ในน้ำยา — การออกกลางคันอาจทำให้ฟิล์มเสียหาย"
-  > [ออก — กลับหน้าหลัก] [อยู่ต่อ]
+ > "⚠️ ออกจาก session?
+ > ฟิล์มยังอยู่ในน้ำยา — การออกกลางคันอาจทำให้ฟิล์มเสียหาย"
+ > [ออก — กลับหน้าหลัก] [อยู่ต่อ]
 - ถ้าเลือก "ออก" → clear session state → navigate('/')
 - ไม่ navigate ย้อนกลับไป Step Preview (ฟิล์มเริ่มล้างแล้ว)
 
 ### 05 · Step Complete
 - **ไม่มีปุ่ม back** — ไม่ควร back ไป Active Timer ของ step ที่เสร็จแล้ว
 - มี "Emergency exit" เล็กๆ (ไม่ใช่ปุ่มหลัก):
-  > "ออก session" → confirm dialog เดียวกับ 04 paused → navigate('/')
+ > "ออก session" → confirm dialog เดียวกับ 04 paused → navigate('/')
 - ปุ่มหลักมีแค่ "เริ่ม [step ถัดไป] →"
 
 ### 06 · All Done
@@ -82,14 +82,14 @@
 ### 09, 10 · Shopping List (Prep / SBS)
 - ถ้ายัง **ไม่ tick** อะไร → back ได้ทันที
 - ถ้า **tick ไปแล้ว ≥ 1 รายการ** → confirm:
-  > "ออกจากการเตรียม? tick ที่ทำไว้จะหายไป"
-  - ยืนยัน → clear prep progress → navigate back
+ > "ออกจากการเตรียม? tick ที่ทำไว้จะหายไป"
+ - ยืนยัน → clear prep progress → navigate back
 
 ### 11 · Mix Checklist
 - ถ้ายัง **ไม่ tick** → back ได้ทันที → 09/10
 - ถ้า **tick ไปแล้ว ≥ 1 step** → confirm:
-  > "ออกจากการผสม? ความคืบหน้าจะหายไป"
-  - ยืนยัน → clear mix progress → navigate back
+ > "ออกจากการผสม? ความคืบหน้าจะหายไป"
+ - ยืนยัน → clear mix progress → navigate back
 
 ---
 
@@ -99,8 +99,8 @@
 ```tsx
 // ใช้ useBlocker จาก react-router-dom v6.9+
 const blocker = useBlocker(
-  ({ currentLocation, nextLocation }) =>
-    isTimerRunning && currentLocation.pathname !== nextLocation.pathname
+ ({ currentLocation, nextLocation }) =>
+ isTimerRunning && currentLocation.pathname !== nextLocation.pathname
 );
 ```
 
@@ -108,15 +108,37 @@ const blocker = useBlocker(
 ใช้ DaisyUI `modal` component เดียวกันทั่วทั้ง app:
 ```tsx
 <ConfirmLeaveModal
-  open={blocker.state === 'blocked'}
-  message="ฟิล์มยังอยู่ในน้ำยา — ออกกลางคันอาจทำให้ฟิล์มเสียหาย"
-  confirmLabel="ออก — กลับหน้าหลัก"
-  cancelLabel="อยู่ต่อ"
-  onConfirm={() => blocker.proceed()}
-  onCancel={() => blocker.reset()}
+ open={blocker.state === 'blocked'}
+ message="ฟิล์มยังอยู่ในน้ำยา — ออกกลางคันอาจทำให้ฟิล์มเสียหาย"
+ confirmLabel="ออก — กลับหน้าหลัก"
+ cancelLabel="อยู่ต่อ"
+ onConfirm={() => blocker.proceed()}
+ onCancel={() => blocker.reset()}
 />
 ```
 
 ### Recipe-specific considerations
 - **One-shot recipes** (Rodinal, HC-110): ใน Step Complete เพิ่ม note "ทิ้งน้ำยาทันที — ใช้ซ้ำไม่ได้" แต่ไม่เปลี่ยน back policy
 - **Divided D-23**: transition warning "ห้ามล้างน้ำ — เท Bath B ทันที" ใน Step Complete แต่ back policy เหมือนกัน
+
+---
+
+## Addendum (Phase 2)
+
+> Last updated: 2026-04-14
+
+| Screen | Back ได้? | ปลายทาง | หมายเหตุ |
+|--------|-----------|---------|----------|
+| Dev Entry (`/dev`) | ✅ | Home | เลือก kit/recipe ใหม่ได้เสมอ |
+| Dev Setup (`/dev/setup`) | ✅ | Dev Entry | session config ยังไม่เริ่ม timer |
+| Dev Timer (`/dev/timer`) | ⚠️ | Dev Setup | ถ้า timer กำลังทำงาน ให้ confirm ก่อนออก |
+| Dev Done (`/dev/done`) | ✅ | Home หรือ Dev Entry | session ถูกบันทึกแล้ว |
+| Mix Select (`/mix`) | ✅ | Home | |
+| Mix Summary (`/mix/summary`) | ✅ | Mix Select | |
+| Mix Shopping (`/mix/shopping`) | ✅ | Mix Summary | |
+| Mix Prep / Steps (`/mix/prep`, `/mix/steps`) | ⚠️ | Mix Summary | ถ้ามี checklist progress ให้ confirm ก่อน |
+| Mix Done (`/mix/done`) | ✅ | Home หรือ Inventory | |
+
+กฎ เพิ่มเติม:
+- ใช้ bottom nav / left sidebar เพื่อข้าม tab ได้ แต่ถ้าอยู่ใน flow ที่มี progress ให้โชว์ confirm ก่อนทิ้ง progress
+- หน้าหลัง session complete (`/dev/done`) ไม่ควรย้อนกลับเข้า timer เดิม

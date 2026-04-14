@@ -1,17 +1,17 @@
-# Film Dev Guidance — Roadmap V2
+# Film Dev Guidance — Roadmap
 
 > Last updated: 2026-04-14
 > Stack: Bun · React 19 · Vite · Tailwind v4 · DaisyUI v5 · Zustand · Express 5 · PostgreSQL · Google OAuth
 >
-> ⚠️ **V2 Rethink** — Roadmap นี้ใช้สำหรับ app V2 เท่านั้น
-> V1 code ยังอยู่ใน codebase แต่จะถูก replace ทั้งหมดใน Phase 2
+> ⚠️ **Current Architecture Rethink** — Roadmap นี้ใช้สำหรับ app เท่านั้น
+> V1 code ถูกถอดออกจาก codebase แล้วหลังจบ Phase 2 cleanup
 > Product concept และ data model ดูที่:
-> - `../Analog Photographic/film-dev-guidance-ux-requirements-v2.md`
-> - `docs/DATA_MODEL_V2.md`
+> - `../Analog Photographic/film-dev-guidance-ux-requirements.md`
+> - `docs/DATA_MODEL.md`
 
 ---
 
-## V2 Core Concept (สรุป)
+## Core Concept (สรุป)
 
 - **1 recipe = 1 chemical step** (developer / stop / fixer / wash_aid / wetting_agent)
 - **Inventory** = ขวดน้ำยาที่ผสมแล้ว มี lifecycle ของตัวเอง
@@ -32,9 +32,9 @@ Navigation: bottom bar บน mobile · left sidebar บน tablet (768px+)
 
 ---
 
-## สถานะปัจจุบัน (V1 — Complete)
+## สถานะปัจจุบัน (Current Frontend)
 
-> V1 codebase ทำงานได้ครบแล้ว แต่จะถูก replace ด้วย V2 architecture
+> Codebase ปัจจุบันเป็น current frontend พร้อม localStorage repositories
 
 - [x] PWA offline-first frontend
 - [x] Static recipe data (Divided D-23, HC-110, D-76) — bundled format (dev+stop+fix รวมกัน)
@@ -48,91 +48,90 @@ Navigation: bottom bar บน mobile · left sidebar บน tablet (768px+)
 
 ---
 
-## Phase 2 — V2 Foundation (Frontend Rebuild)
+## Phase 2 — Foundation (Frontend Rebuild)
 
-> เป้าหมาย: rebuild frontend ทั้งหมดบน V2 data model
+> เป้าหมาย: rebuild frontend ทั้งหมดบน data model
 > ยังเป็น localStorage-only, static recipe data
 > **V1 code ถูก replace ทั้งหมดใน phase นี้**
 
-### 2-1 Data Layer V2
-
-- [ ] สร้าง types ใหม่ตาม `DATA_MODEL_V2.md`:
-  - `types/recipe.ts` — `Recipe`, `RecipeStepType`, `FilmCompatibility`, `RecipeConstraints`
-  - `types/inventory.ts` — `InventoryItem`
-  - `types/kit.ts` — `Kit`, `KitSlot`, `KitSlotType`
-  - `types/session.ts` — `DevSession`, `SessionSource`, `InventoryUpdate`
-- [ ] สร้าง repository interfaces:
-  - `RecipeRepository` (getAll + filter, getById, getByStepType, save, delete)
-  - `InventoryRepository` (getAll + filter, getById, save, updateUseCount, updateStatus, delete)
-  - `KitRepository` (getAll, getById, save, delete)
-  - `SessionRepository` (getAll, getById, save, getRecentSessions)
-- [ ] Implement `LocalRecipeRepository` — อ่าน static TypeScript data
-- [ ] Implement `LocalInventoryRepository` — localStorage key `v2-inventory`
-- [ ] Implement `LocalKitRepository` — localStorage key `v2-kits`
-- [ ] Implement `LocalSessionRepository` — localStorage key `v2-sessions`
-- [ ] Seed V2 system recipes (Rodinal, HC-110, D-76, Ilfostop, Ilford Rapid Fixer ฯลฯ) แยกเป็น 1 recipe ต่อ 1 chemical step
+### 2-1 Data Layer 
+- [x] สร้าง types ใหม่ตาม `DATA_MODEL.md`:
+ - `types/recipe.ts` — `Recipe`, `RecipeStepType`, `FilmCompatibility`, `RecipeConstraints`
+ - `types/inventory.ts` — `InventoryItem`
+ - `types/kit.ts` — `Kit`, `KitSlot`, `KitSlotType`
+ - `types/session.ts` — `DevSession`, `SessionSource`, `InventoryUpdate`
+- [x] สร้าง repository interfaces:
+ - `RecipeRepository` (getAll + filter, getById, getByStepType, save, delete)
+ - `InventoryRepository` (getAll + filter, getById, save, updateUseCount, updateStatus, delete)
+ - `KitRepository` (getAll, getById, save, delete)
+ - `SessionRepository` (getAll, getById, save, getRecentSessions)
+- [x] Implement `LocalRecipeRepository` — อ่าน static TypeScript data
+- [x] Implement `LocalInventoryRepository` — localStorage key `inventory`
+- [x] Implement `LocalKitRepository` — localStorage key `kits`
+- [x] Implement `LocalSessionRepository` — localStorage key `sessions`
+- [x] Seed system recipes (Rodinal, HC-110, D-76, Ilfostop, Ilford Rapid Fixer ฯลฯ) แยกเป็น 1 recipe ต่อ 1 chemical step
 
 ### 2-2 Manage Recipes Section
 
-- [ ] Recipe list page — แสดงแยก personal / system
-- [ ] Recipe detail page — ข้อมูล recipe + mixing instructions (ถ้ามี)
-- [ ] Filter/search — ตาม step_type, film compatibility
-- [ ] Create personal recipe — quick form (ชื่อ + type + time + temp)
-- [ ] Create personal recipe — full form (mixing guide + chemicals + timing table)
-- [ ] Edit / delete personal recipe
-- [ ] Saved favourites — save community/system recipe ไว้ใน personal list
+- [x] Recipe list page — แสดงแยก personal / system
+- [x] Recipe detail page — ข้อมูล recipe + mixing instructions (ถ้ามี)
+- [x] Filter/search — ตาม step_type, film compatibility
+- [x] Create personal recipe — quick form (ชื่อ + type + time + temp)
+- [x] Create personal recipe — full form (mixing guide + chemicals + timing table)
+- [x] Edit / delete personal recipe
+- [x] Saved favourites — save community/system recipe ไว้ใน personal list
 
 ### 2-3 Mixing Guidance Section (Mix tab)
 
-- [ ] Recipe multi-select — checkbox เลือกได้หลาย recipe พร้อมกัน (filter: step_type / film / search)
-- [ ] Summary screen — แสดง recipes ที่เลือก + ingredients overview รวม
-- [ ] Mode selector — เลือก **Prep Mode** หรือ **Step-by-Step Mode** บน summary screen
-- [ ] Prep Mode — overview ทุก recipe พร้อมกัน ไล่ tick เองตามสะดวก
-- [ ] Step-by-Step Mode — walk through ทีละ recipe เรียงลำดับ:
-  - [ ] Select volume + เลือก dilution (ถ้ามี)
-  - [ ] Shopping list — scale chemicals ตาม target volume
-  - [ ] Mix checklist — guided step-by-step
-  - [ ] Done → prompt "บันทึกลง Inventory?" → สร้าง `InventoryItem` linked to recipe
+- [x] Recipe multi-select — checkbox เลือกได้หลาย recipe พร้อมกัน (filter: step_type / film / search)
+- [x] Summary screen — แสดง recipes ที่เลือก + ingredients overview รวม
+- [x] Mode selector — เลือก **Prep Mode** หรือ **Step-by-Step Mode** บน summary screen
+- [x] Prep Mode — overview ทุก recipe พร้อมกัน ไล่ tick เองตามสะดวก
+- [x] Step-by-Step Mode — walk through ทีละ recipe เรียงลำดับ:
+ - [x] Select volume + เลือก dilution (ถ้ามี)
+ - [x] Shopping list — scale chemicals ตาม target volume
+ - [x] Mix checklist — guided step-by-step
+ - [x] Done → prompt "บันทึกลง Inventory?" → สร้าง `InventoryItem` linked to recipe
 
 ### 2-4 Inventory & Kit Section
 
 **Inventory:**
-- [ ] Inventory list — แสดงขวดทั้งหมด พร้อม status badge (active/expired/exhausted)
-- [ ] Inventory item detail — recipe ที่ใช้, วันผสม, use count, shelf life countdown
-- [ ] Add item manually (นอกจาก mixing guidance prompt)
-- [ ] Edit / delete inventory item
-- [ ] Mark as exhausted
+- [x] Inventory list — แสดงขวดทั้งหมด พร้อม status badge (active/expired/exhausted)
+- [x] Inventory item detail — recipe ที่ใช้, วันผสม, use count, shelf life countdown
+- [x] Add item manually (นอกจาก mixing guidance prompt)
+- [x] Edit / delete inventory item
+- [x] Mark as exhausted
 
 **Kit:**
-- [ ] Kit list — แสดง kits ทั้งหมด พร้อม warning ถ้า item ใด expired/exhausted
-- [ ] Create kit — เลือก inventory items ต่อ slot (developer, stop, fixer, wash_aid, wetting_agent)
-- [ ] Kit validation — error ถ้า developer/fixer slot ว่าง, warn ถ้า stop ว่าง
-- [ ] Chemistry constraint check — pyro developer + non-alkaline fixer → error
-- [ ] Edit / delete kit
-- [ ] Two-bath developer — auto-generate 2 developer slots เรียงถูกต้อง
+- [x] Kit list — แสดง kits ทั้งหมด พร้อม warning ถ้า item ใด expired/exhausted
+- [x] Create kit — เลือก inventory items ต่อ slot (developer, stop, fixer, wash_aid, wetting_agent)
+- [x] Kit validation — error ถ้า developer/fixer slot ว่าง, warn ถ้า stop ว่าง
+- [x] Chemistry constraint check — pyro developer + non-alkaline fixer → error
+- [x] Edit / delete kit
+- [x] Two-bath developer — auto-generate 2 developer slots เรียงถูกต้อง
 
 ### 2-5 Film Dev Guidance Section
 
-- [ ] Entry point 1: เลือก kit → session setup
-- [ ] Entry point 2: เลือก community/system recipe โดยตรง (ไม่ track inventory)
-- [ ] Session setup: film format, rolls count, temperature, push/pull
-- [ ] Calculate development time: temp_table + push_pull_table + reusable compensation + agitation adjustment
-- [ ] Timer: countdown + agitation reminder ทุก step
-- [ ] Step transition warnings (two-bath: "ห้ามล้างน้ำ — เท Bath B ทันที")
-- [ ] All Done → update `use_count` ของ inventory items ทุกตัวใน kit (dedup shared items)
-- [ ] Save session history (`DevSession`)
-- [ ] Session history list บน home / section
+- [x] Entry point 1: เลือก kit → session setup
+- [x] Entry point 2: เลือก community/system recipe โดยตรง (ไม่ track inventory)
+- [x] Session setup: film format, rolls count, temperature, push/pull
+- [x] Calculate development time: temp_table + push_pull_table + reusable compensation + agitation adjustment
+- [x] Timer: countdown + agitation reminder ทุก step
+- [x] Step transition warnings (two-bath: "ห้ามล้างน้ำ — เท Bath B ทันที")
+- [x] All Done → update `use_count` ของ inventory items ทุกตัวใน kit (dedup shared items)
+- [x] Save session history (`DevSession`)
+- [x] Session history list บน home / section
 
 ### 2-6 UX & Navigation
 
-- [ ] Bottom nav 5 tabs (Dev / Mix / Recipes / My Kit / Settings) บน mobile
-- [ ] Left sidebar บน tablet 768px+ / desktop — same 5 tabs
-- [ ] Active tab highlight + icon (Lucide: Timer / FlaskConical / BookOpen / Package / Settings)
-- [ ] Dev tab home: kit shortcuts (1-tap) + recent sessions (3–5 รายการ) + anonymous session entry
-- [ ] Equipment profile (tank type, agitation method, water hardness) — อยู่ใน Settings tab, localStorage `v2-equipment`
-- [ ] Session-level equipment override (temporary — ไม่ save กลับ settings)
-- [ ] Onboarding empty states สำหรับแต่ละ tab
-- [ ] Update `BACK_BUTTON_POLICY.md` ตาม V2 screen structure
+- [x] Bottom nav 5 tabs (Dev / Mix / Recipes / My Kit / Settings) บน mobile
+- [x] Left sidebar บน tablet 768px+ / desktop — same 5 tabs
+- [x] Active tab highlight + icon (Lucide: Timer / FlaskConical / BookOpen / Package / Settings)
+- [x] Dev tab home: kit shortcuts (1-tap) + recent sessions (3–5 รายการ) + anonymous session entry
+- [x] Equipment profile (tank type, agitation method, water hardness) — อยู่ใน Settings tab, localStorage `equipment`
+- [x] Session-level equipment override (temporary — ไม่ save กลับ settings)
+- [x] Onboarding empty states สำหรับแต่ละ tab
+- [x] Update `BACK_BUTTON_POLICY.md` ตาม screen structure
 
 ---
 
@@ -149,9 +148,9 @@ Navigation: bottom bar บน mobile · left sidebar บน tablet (768px+)
 
 ### 3-2 Recipe Schema & Seed
 
-- [ ] ออกแบบ DB schema ตาม `DATA_MODEL_V2.md` + `RECIPE_SCHEMA.md`
+- [ ] ออกแบบ DB schema ตาม `DATA_MODEL.md` + `RECIPE_SCHEMA.md`
 - [ ] Drizzle table definitions: `recipes`, `users`
-- [ ] Seed script: แปลง V2 system recipes เข้า DB
+- [ ] Seed script: แปลง system recipes เข้า DB
 - [ ] `GET /api/v1/recipes` — list + filter (step_type, film, search)
 - [ ] `GET /api/v1/recipes/:id`
 - [ ] Frontend: สร้าง `ApiRecipeRepository` — swap เข้าแทน `LocalRecipeRepository`
@@ -199,7 +198,7 @@ Navigation: bottom bar บน mobile · left sidebar บน tablet (768px+)
 
 ---
 
-## Architecture Decisions (V2 — ตัดสินใจแล้ว)
+## Architecture Decisions ( — ตัดสินใจแล้ว)
 
 | ประเด็น | Decision |
 |---------|---------|
@@ -222,4 +221,4 @@ Navigation: bottom bar บน mobile · left sidebar บน tablet (768px+)
 | Auth | Google OAuth | ไม่ต้อง manage password |
 | Token | JWT (httpOnly cookie) | ป้องกัน XSS |
 | Hosting | Railway | รองรับ Postgres + Node.js |
-| localStorage keys | prefix `v2-` ทุก key | แยกจาก V1 data ชัดเจน |
+| localStorage keys | standard keys (no prefix) ทุก key | คง naming ให้ชัดก่อน backend migration |
