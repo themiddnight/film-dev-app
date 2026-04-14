@@ -1,539 +1,469 @@
-# Film Dev Guidance — User Flow & Requirements
+# Film Dev Guidance — User Flow V2
 
-> **Status:** Planning · Phase 1 (Frontend only, static JSON)
-> **Last updated:** 2026-04-04
-> **Icon library:** Lucide React (sync กับ Figma ผ่าน Lucide Icons plugin)
+> **Status:** Planning · V2 (ยังไม่ implement)
+> **Last updated:** 2026-04-14
+> **Icon library:** Lucide React
+
+> ⚠️ **V2 Rewrite** — เอกสารนี้ describe flows ของ V2 ทั้งหมด
+> V1 flow (FLOW.md เดิม) ถูก archive ไว้ใน git history
+> Product concept ดูที่: `../Analog Photographic/film-dev-guidance-ux-requirements-v2.md`
 
 ---
 
 ## Terminology
 
-> คำศัพท์ที่ใช้ในเอกสาร, code, และ UI ของ app นี้
-> เวลาไม่แน่ใจว่าคำไหนหมายความว่าอะไร — กลับมาดูที่นี่ก่อน
-
----
-
 ### Film Development Process
 
 | คำ | ความหมาย | ตัวอย่าง |
 |----|----------|----------|
-| **Developer** | น้ำยาที่เปลี่ยน latent image บนฟิล์มให้เป็นภาพจริง — เป็น step แรกและสำคัญที่สุด | Divided D-23, HC-110, D-76 |
-| **Stop Bath** | น้ำยาที่หยุดการทำงานของ developer ทันที — ใช้ acetic acid (chemical) หรือน้ำเปล่า (water stop) | Ilfostop, น้ำก๊อก |
-| **Fixer** | น้ำยาที่ละลาย silver halide ที่ไม่ถูก expose ออกไป ทำให้ฟิล์มไวแสงถาวร | Ilford Rapid Fixer |
-| **Wash** | ล้างน้ำยาออก — อาจมี wash aid ช่วยเร่งหรือใช้น้ำเปล่าอย่างเดียว | running water 5 นาที |
-| **Develop Session** | กระบวนการล้างฟิล์ม 1 ครั้งทั้งหมด ตั้งแต่ developer → stop → fix → wash | — |
-| **Push / Pull** | Push (+N stop) = ล้างนานขึ้นเพื่อเพิ่ม contrast / Pull (−N stop) = ล้างสั้นลงเพื่อลด | N+1 = push 1 stop |
-| **N / N+1 / N-1** | Development type — N คือ normal, N+1 คือ push 1 stop, N-1 คือ pull 1 stop | |
-| **Pre-soak** | แช่ฟิล์มในน้ำก่อน developer เพื่อให้ emulsion พองตัวสม่ำเสมอ — optional | |
+| **Developer** | น้ำยาที่เปลี่ยน latent image บนฟิล์มให้เป็นภาพจริง | Rodinal, HC-110, D-76, Divided D-23 |
+| **Stop Bath** | น้ำยาที่หยุดการทำงานของ developer — chemical (acetic acid) หรือ water stop | Ilfostop, น้ำก๊อก |
+| **Fixer** | ละลาย silver halide ที่ไม่ถูก expose ออก ทำให้ฟิล์มไวแสงถาวร | Ilford Rapid Fixer |
+| **Wash Aid** | เร่งการล้าง hypo ออก — optional แต่ช่วยลดเวลาล้างน้ำ | Kodak HCA, Ilford Washaid |
+| **Wetting Agent** | ป้องกัน water spots ตอนแห้ง | Photo-Flo, Ilfotol |
+| **Develop Session** | กระบวนการล้างฟิล์ม 1 ครั้ง ตั้งแต่ developer จนถึง dry | — |
+| **Push / Pull** | Push (+N): ล้างนาน เพิ่ม contrast / Pull (−N): ล้างสั้น ลด contrast | N+1 = push 1 stop |
+| **Two-Bath Developer** | developer แบบ 2 ขั้นตอนต่อกัน ห้ามแทรก stop ระหว่าง Bath A กับ Bath B | Divided D-23 |
 
 ---
 
-### Chemistry
+### V2 App Entities
 
-| คำ | ความหมาย | ตัวอย่าง |
-|----|----------|----------|
-| **Bath** | น้ำยา 1 ชุดที่ผสมพร้อมแล้ว — recipe 1 ตัวอาจมี 1 หรือ 2 bath | Bath A (Developer), Bath B (Activator) ใน Divided D-23 |
-| **One-bath** | สูตรที่มี developer bath เดียว | HC-110, D-76 |
-| **Two-bath** | สูตรที่แยก developer เป็น 2 bath ที่ฟิล์มต้องผ่านต่อกัน — bath แรกอิ่มตัวในฟิล์ม, bath สองกระตุ้น | Divided D-23 (Bath A → Bath B) |
-| **One-shot** | ใช้ครั้งเดียวแล้วทิ้ง — ผลลัพธ์สม่ำเสมอ ไม่ต้อง track rolls | HC-110 working solution |
-| **Reusable** | ใช้ซ้ำได้หลาย roll — ต้องเพิ่มเวลา develop ตามจำนวน roll ที่ผ่านไปแล้ว | stop bath, fixer, บาง developer |
-| **Dilution** | อัตราส่วนผสมน้ำยากับน้ำ — เช่น "1:31" หมายถึง น้ำยา 1 ส่วน : น้ำ 31 ส่วน | HC-110 Dil.B = 1:31 |
-| **Chemical Format** | วิธีที่น้ำยาถูกจำหน่าย/เตรียม — กำหนดว่าต้องทำอะไรก่อนใช้ | raw_powder, liquid_concentrate, ready_to_use |
-| **Agitation** | การกวนน้ำยาระหว่าง develop เพื่อให้สัมผัสฟิล์มสม่ำเสมอ | inversion, rotation, stand |
-| **Time Compensation** | การเพิ่มเวลา develop เมื่อใช้ developer แบบ reusable เพราะประสิทธิภาพลดลง | roll 3–4: +25%, roll 5–6: +50% |
-
----
-
-### App Entities
-
-| คำ | ความหมาย | อยู่ที่ไหนใน code |
-|----|----------|-----------------|
-| **Recipe** | สูตรล้างฟิล์ม 1 สูตร ครอบคลุม **ทั้ง session** ตั้งแต่ developer → stop → fix → wash — ประกอบด้วย baths (วิธีผสมน้ำยาแต่ละชุด) + develop steps (ลำดับและเวลาจริง) | Divided D-23, HC-110, D-76 |
-| **Bath** | น้ำยา 1 ชุดย่อยภายใน recipe — recipe 1 ตัวมีได้หลาย bath | Bath A (Developer) และ Bath B (Activator) เป็น 2 bath ของ recipe Divided D-23 |
-| **Process Step / Develop Step** | ขั้นตอน 1 ขั้นในการล้างฟิล์ม — บางขั้นใช้น้ำยา (bath_ref), บางขั้นไม่ใช้ (wash, dry) | `types/recipe.ts` → `DevelopStep` |
-| **Inventory** | คลังขวดน้ำยาที่ user มีจริงในมือ — track วันผสม, roll count, shelf life | `types/kit.ts` → `ChemicalBottle` |
-| **Kit** | Preset ที่ user สร้างล่วงหน้า — กำหนดว่าแต่ละ step ของ recipe จะใช้ขวดไหนจาก Inventory | `types/kit.ts` → `DevKit` |
-| **Slot** | การ map ระหว่าง 1 develop step กับ 1 ขวดใน Inventory | `types/kit.ts` → `KitSlot` |
-| **Session** | การล้างฟิล์ม 1 ครั้ง — user เลือก recipe + Kit/ขวด แล้วเริ่ม timer | developStore state |
+| คำ | ความหมาย | หมายเหตุ |
+|----|----------|---------|
+| **Recipe** | สูตรสำหรับ **1 chemical step** — developer, stop, fixer, wash_aid หรือ wetting_agent | ไม่ใช่ bundle อีกต่อไป |
+| **System Recipe** | Recipe ที่ทีม seed ไว้ ทุกคนใช้ได้ | verified + read-only |
+| **Personal Recipe** | Recipe ที่ user สร้างเอง private by default | สร้างได้เร็ว ไม่ผ่าน review |
+| **Community Recipe** | Personal recipe ที่ user publish ออก community | ผ่าน admin review |
+| **Inventory Item** | ขวดน้ำยาที่ผสมแล้ว มี lifecycle (mixed_date, use_count, status) | link กลับไป Recipe เสมอ |
+| **Kit** | Step preset — ordered list ของ Inventory Items ที่จะใช้ใน session | pointer ไม่ใช่ copy |
+| **Kit Slot** | mapping ระหว่าง slot_type หนึ่งกับ Inventory Item หนึ่ง | slot_type: developer/stop/fixer/wash_aid/wetting_agent |
+| **Dev Session** | การล้างฟิล์ม 1 ครั้ง — deduct use_count + สร้าง history | มาจาก kit หรือ recipes โดยตรง |
 
 ---
 
-### UI Actions / Flow Terms
+### UI Actions
 
-| คำ | ความหมาย | ตัวอย่าง |
-|----|----------|----------|
-| **Prep** | ขั้นตอนชั่ง/ตวงสารเคมีให้ครบก่อนผสม | เตรียม Metol 7.5g, Sodium Sulphite 100g |
-| **Mix** | ขั้นตอนผสมสารเคมีตามลำดับจริง | เทน้ำ → ใส่ Sodium Sulphite → ใส่ Metol |
-| **Kit Shortcut** | Card บน RecipeSelectPage — แตะครั้งเดียวเพื่อโหลด recipe + Kit slots แล้วไป Step Preview เลย | — |
-| **Apply Kit** | การโหลด slot selections จาก Kit preset เข้า session — override ได้ต่อ slot | — |
-| **Time Compensation Badge** | แสดงใน Step Preview เมื่อเลือกขวด reusable — บอก % เวลาที่เพิ่มขึ้น | "ม้วนที่ 5–6: +50%" |
+| คำ | ความหมาย |
+|----|----------|
+| **Apply Kit** | โหลด inventory items จาก Kit preset เข้า session |
+| **Time Compensation** | เพิ่มเวลา develop เมื่อขวด developer เป็น reusable — +25%/roll |
+| **Kit Validation** | ตรวจ kit ก่อนเริ่ม session: developer+fixer required, stop recommended |
 
 ---
 
-## Overview
+## App Structure — 5 Tabs
 
-App มี 4 flow หลัก แบ่งเป็น 2 กลุ่ม:
+Navigation: **Bottom bar บน mobile / Left sidebar บน tablet (768px+) และ desktop**
 
-| # | Flow | Phase |
-|---|------|-------|
-| 1 | **Mixing Guide** — ผสมน้ำยา step-by-step | Phase 1 ✅ |
-| 2 | **Develop Session** — ล้างฟิล์ม real-time timer | Phase 1 ✅ |
-| 3 | **Create Recipe** — สร้างสูตรใหม่ | Phase 2 (planned) |
-| 4 | **Community Contribute** — ผู้ใช้ contribute สูตร | Phase 3 (planned) |
+```
+App
+├── Dev       — Film Dev session (timer, entry point หลัก)
+├── Mix       — Mixing Guidance (multi-select recipe → guided flow → inventory)
+├── Recipes   — Browse / Create / Favorites / Community recipes
+├── My Kit    — Inventory + Kits (sub-nav ภายใน tab)
+└── Settings  — Equipment profile, preferences
+```
 
-**Inventory ไม่ใช่ flow แยก** — integrate เข้า Flow 1 และ Flow 2 โดยตรง:
-- Flow 1 (Mixing): Done → prompt "บันทึกลง Inventory?" (optional, ทุก bath ที่ `mixing_required === true`)
-- Flow 2 (Develop): RecipeSelect → เลือก Kit shortcut (optional) → Step Preview → เลือก Kit/ขวด (optional) → All Done → rollsDeveloped++ อัตโนมัติ
-- จัดการขวด (ดู/แก้/ลบ) + จัดการ Kit presets → ผ่าน Inventory page เข้าจาก Home navbar icon
-
-**Terminology (Phase 1c):**
-- **Inventory** = ขวดน้ำยาที่ user มีจริง (UI label ใน page title, prompt, hint)
-- **Kit** = preset mapping ขวดต่อ recipe step — สร้างล่วงหน้า ใช้ใน session
-- Route path `/my-kit` คงเดิม (ไม่เปลี่ยน ไม่กระทบ PWA cache)
+| Tab | Icon (Lucide) | Default landing |
+|-----|--------------|-----------------|
+| Dev | `Timer` | ใช่ — หน้าแรกที่เปิดแอพ |
+| Mix | `FlaskConical` | ไม่ |
+| Recipes | `BookOpen` | ไม่ |
+| My Kit | `Package` | ไม่ |
+| Settings | `Settings` | ไม่ |
 
 ---
 
-## Flow 1 — Mixing Guide
+## Flow 1 — Manage Recipes
 
-มี 2 sub-flow ที่ผลลัพธ์เหมือนกัน ต่างกันที่ลำดับการ Prep และ Mix
-
-### Sub-flow A — Prep Mode
-เหมาะสำหรับคนที่ผสมใหม่ทั้งชุด ชั่ง/ตวงสารเคมีทุก bath/process step ให้ครบก่อน แล้วค่อยไล่ผสมทีละ bath
-
-```
-Home
-  → เลือกสูตร
-    → เลือก Process Steps ที่จะทำ (multi-select) + ตั้ง Target Volume + เลือก Prep Mode
-      → [PREP] Shopping List รวมทุก step ที่เลือก
-          tick ✓ ชั่ง/ตวงสารเคมีแต่ละรายการให้ครบ (grouped by bath/step)
-        → [MIX] ผสม Process Step 1 — Mix Checklist
-        → [MIX] ผสม Process Step 2 — Mix Checklist
-        → ...
-        → Done ✅
-```
-
-### Sub-flow B — Step-by-Step Mode
-เหมาะสำหรับคนที่ทำทีละ step เช่น fixer ยังเหลือ ผสมแค่ develop กับ stop
-
-```
-Home
-  → เลือกสูตร
-    → เลือก Process Steps ที่จะทำ (multi-select) + ตั้ง Target Volume + เลือก Step-by-Step Mode
-      → Process Step 1:
-          [PREP] Shopping List ของ step นี้ — tick ✓ ชั่ง/ตวงให้ครบ
-          [MIX]  Mix Checklist — ผสมตามขั้นตอน
-        → Process Step 2:
-          [PREP] Shopping List ของ step นี้
-          [MIX]  Mix Checklist
-        → ...
-        → Done ✅
-```
-
-### Selection Screen — fields
-
-**User กำหนดได้ (input)**
-| Field | Type | Default | หมายเหตุ |
-|-------|------|---------|----------|
-| Process Steps ที่จะทำ | multi-select | ทั้งหมด | เช่น ยกเลิก Fixer เพราะยังเหลือ |
-| Target volume | number (free input) | 1000 ml | หน่วยตาม settings (metric/imperial) ใช้กับทุก step ที่เลือก |
-| Mode | Prep / Step-by-Step | ค่าล่าสุดจาก localStorage | |
-
-**ระบบคำนวณให้ตาม ratio (read-only)**
-| Field | คำอธิบาย |
-|-------|----------|
-| ปริมาณสารเคมีแต่ละตัว | scale จาก base_volume ของสูตร → target volume |
-| ปริมาณน้ำในแต่ละ step | recalculate ตาม target volume |
-
-**คงที่เสมอ (ไม่ปรับได้)**
-| Field | เหตุผล |
-|-------|--------|
-| ลำดับการใส่สารเคมี | chemistry constraint — ห้ามเปลี่ยน |
-| Note / Warning ประจำ step | safety-critical information |
-
-### PREP — Shopping List behavior
-- แสดงสารเคมีทุกตัวที่ต้องชั่ง/ตวง
-- Prep Mode: รวมทุก process step ที่เลือกในหน้าเดียว (grouped by bath/step)
-- Step-by-Step Mode: แสดงเฉพาะ step ปัจจุบัน
-- แต่ละรายการ tick ✓ ได้ (track ว่าชั่งแล้ว)
-- ปริมาณ recalculate ตาม target volume แล้ว
-- note เตือนลำดับการใส่ถ้ามี เช่น "(ชั่งไว้ก่อน ใส่หลัง Sodium Sulphite)"
-
-**ตัวอย่าง Shopping List — Prep Mode (500 ml, เลือก Bath A + Stop Bath):**
-```
-Bath A — Developer
-  □ Sodium Sulphite   50 g    (ใส่ก่อน Metol)
-  □ Metol              3.75 g  (ใส่หลัง Sodium Sulphite)
-
-Stop Bath
-  □ Potassium Metabisulphite   10–12.5 g
-
-[เตรียมครบแล้ว → เริ่มผสม Bath A]
-```
-
-### MIX — Checklist behavior
-- แสดงขั้นตอนการผสมทีละ step ตามลำดับที่กำหนดในสูตร
-- tick ✓ แต่ละ step ได้
-- Warning สำคัญแสดงโดด เช่น "ใส่ Metol หลัง Sodium Sulphite เสมอ"
-- ไม่มี timer
-- หลังผสมเสร็จ 1 step → ไป step ถัดไป (ตาม mode ที่เลือก) หรือ Done
-
-### Done — Inventory prompt (Phase 1b + 1c fix)
-
-หลังจาก Done (น้ำยาพร้อม) → แสดง prompt **optional**:
-
-```
-"บันทึกลง Inventory?"
-  ├─ บันทึก → เปิด Add Bottle form (prefill: bottleName จากสูตร, mixedAt = วันนี้)
-  │            → บันทึก → กลับ Home
-  └─ ข้ามไป → กลับ Home
-```
-
-**พฤติกรรม:**
-- Prompt แสดงสำหรับ**ทุก bath** ที่ `bath.mixing_required === true` (Phase 1c fix — เดิม trigger เฉพาะ developer bath)
-- `role` ถูก set อัตโนมัติจาก `bath.role` — developer baths → `reusable`, อื่นๆ → `one-shot`
-- เป็น optional เสมอ — กด "ข้ามไป" ได้โดยไม่กระทบอะไร
-- ถ้า user มีขวดชื่อเดิมอยู่แล้วใน Inventory → แสดง option "เพิ่มขวดใหม่" หรือ "อัปเดตขวดเดิม"
-
----
-
-## Flow 2 — Develop Session
-
-### Journey
-```
-Home
-  → เลือกสูตร (Recipe Select)
-      [Kit Shortcuts — optional] ← แสดงด้านบนสุดถ้ามี Kit
-      ├─ แตะ Kit → setRecipe + applyKitSlots → ไป Step Preview โดยตรง (1 tap)
-      └─ เลือกสูตรเอง → Step Preview
-    → Step Preview  ← ตั้งค่าและ custom ก่อนเริ่ม
-        [เลือก Kit — optional dropdown กรอง Kit ที่ตรงกับ recipe นี้]
-        ├─ เลือก Kit → populate per-slot dropdowns อัตโนมัติ (override ได้ต่อ slot)
-        └─ ข้าม → เลือก bottle ต่อ slot เองหรือข้าม
-        [ต่อแต่ละ slot: dropdown bottle จาก Inventory — filter by bath role]
-        ├─ reusable bottle → time compensation badge แสดง
-        └─ ข้าม → ใช้ค่า default จาก recipe
-      → Active Timer (loop ทีละ step)
-        → Step Complete (transition)
-        → (next step...)
-      → All Done 🎉
-          [อัปเดต rollsDeveloped ของทุก slot ที่มี bottleId — dedup ถ้าขวดเดียวซ้ำ]
-```
-
-### Inventory integration ใน Develop Session
-
-**ทำไมเชื่อมกัน:**
-- `type: reusable` → คำนวณ time compensation อัตโนมัติ (rolls 1–2: standard, rolls 3–4: +25%, ฯลฯ)
-- `rollsDeveloped` → track จาก sessions จริง ไม่ต้องนับเอง
-- `defaultDilution` → โหลดเป็น default แต่ override ได้ต่อ session
-
-**พฤติกรรม:**
-- การเลือกขวดใน Step Preview เป็น **optional เสมอ** — ข้ามได้ ไม่บังคับ
-- ถ้าไม่มีขวดใน Inventory ที่ตรงกับ role → แสดง hint "เพิ่มขวดได้ใน Inventory"
-- หลัง All Done → `incrementRolls(bottleId)` ถูกเรียกอัตโนมัติสำหรับทุก slot ที่มี bottleId (dedup ถ้าขวดเดียวใช้หลาย slot)
-
-### Step Preview — fields
-
-**User กำหนดได้ (input)**
-| Field | Type | Default | หมายเหตุ |
-|-------|------|---------|----------|
-| Kit | dropdown | — (optional) | เลือก Kit preset → populate per-slot bottles อัตโนมัติ |
-| ขวดน้ำยา (per slot) | dropdown | — (optional) | เลือกขวดจาก Inventory ต่อ slot — filter by bath role |
-| Development type | N-1 / N / N+1 | N | ปรับ contrast (push/pull) |
-| อุณหภูมิน้ำยา | number | — | app คำนวณเวลา Bath A จาก temp table · ควรวัดก่อนเริ่มทุกครั้ง |
-| เวลาแต่ละ step | number (per step) | จาก JSON | override ได้, save ใน localStorage |
-| Film format | 35mm / 120 / 4×5 | — | (Phase 2+) ใช้คำนวณ volume ที่ต้องใช้ |
-| จำนวน rolls | number | 1 | (Phase 2+) บวก rolls เพื่อคำนวณ volume และ warn ถ้า push ต่างกัน |
-
-**ระบบคำนวณให้ (read-only)**
-| Field | คำอธิบาย |
-|-------|----------|
-| เวลา Bath A | lookup จาก temp × development type table |
-| เวลา Bath B | คงที่ 5 นาทีเสมอ (สำหรับ Divided D-23) |
-| เวลา Fixer | default จาก JSON, override ได้ |
-
-**Temperature Warning:**
-- ก่อนเริ่ม: app แนะนำให้วัด temp และ confirm ก่อน session — user รับผิดชอบรักษา temp ให้ stable
-- ระหว่าง session: ถ้า temp เปลี่ยน สามารถ adjust ได้ แต่มี warn ว่า "การเปลี่ยน temp กลางคันอาจกระทบ evenness ของ development"
-
-**ปุ่ม Reset** — กลับค่าทั้งหมดเป็น default จาก JSON (ล้าง localStorage overrides)
-
-### Active Timer — behavior
-- Countdown ใหญ่ — readable at a glance
-- Progress bar แสดง step ปัจจุบัน / ทั้งหมด
-- Warning ของ step นั้น แสดงตลอด (เช่น "เท Bath A กลับขวดทันทีเมื่อเสร็จ")
-- Agitation reminder — แจ้งเตือนตามเวลาที่กำหนดในสูตร (ปรับ type ได้ใน Settings)
-- ปุ่ม Pause
-- ปุ่ม "Step ต่อไป" — active ได้เมื่อหมดเวลา (หรือ override กด early ได้)
-- เมื่อหมดเวลา → แจ้งเตือน → แสดงหน้า Step Complete
-
-### Step Complete — behavior
-- แสดง warning สำหรับ transition ไป step ถัดไป (เช่น "ห้ามล้างน้ำก่อนเท Bath B")
-- แสดง step ถัดไปพร้อมเวลา
-- กด "เริ่ม [step ถัดไป]" เพื่อไปต่อ
-
-### Fixer time
-- Default จาก JSON (เช่น 8 นาที)
-- User override ได้ใน Step Preview (เช่น ถ้าวัด clearing time จริง → × 2)
-- Save ใน localStorage
-
----
-
----
-
-## Kit Playlist (Phase 1c)
-
-**แนวคิด:** DevKit คือ "playlist" ที่ user สร้างล่วงหน้า — เลือกว่าแต่ละ step ของ recipe ใช้ขวดไหน
-เหมือนมีเพลงอยู่ (bottles) แล้วจัด playlist (kit) ว่าจะเล่นลำดับไหน กับสูตรไหน
-
-### ทำไมต้อง Kit แทน bottle-per-step?
-- ปกติ user ใช้ stop + fixer ชุดเดียวซ้ำหลายสูตร — ไม่อยากเลือกใหม่ทุก session
-- สูตร 2-bath ต้องการ developer 2 ขวด (Bath A + Bath B) — Kit รู้ว่าแต่ละ slot ใช้ขวดไหน
-- Kit เป็นเพียง "default preset" — ยัง override ได้ต่อ session เสมอ
+### Overview
+Section สำหรับจัดการสูตรทั้งหมดของ user และ browse community
 
 ### Entry points
+- Bottom nav → "Recipes"
+- ปุ่ม "ดูสูตร" จาก recipe detail ใน section อื่น
 
-| จุดเข้า | ที่มา | action |
-|---------|-------|--------|
-| **Inventory page → "สร้าง Kit ใหม่"** | ทุกเวลา | สร้าง Kit ใหม่ / แก้ไข Kit ที่มีอยู่ |
-| **RecipeSelectPage — Kit shortcuts** | เลือกสูตร | แตะ Kit → setRecipe + applyKitSlots → Step Preview (1 tap) |
-| **Step Preview → "เลือก Kit"** | ก่อน session | โหลด Kit → populate slots → override ต่อ slot → เริ่ม session |
+### Flow: Browse & Save
+
+```
+Recipes page
+  ├─ Personal tab
+  │     แสดง: personal recipes (private + published)
+  │     → แตะ recipe → Recipe detail
+  └─ Community tab
+        Filter: step_type / film / search
+        → แตะ recipe → Recipe detail
+              → [Save เป็น Favourite] ← เพิ่มใน personal list
+              → [ใช้ใน Mixing Guidance] ← shortcut ข้ามไป Flow 2
+```
+
+### Flow: Create Personal Recipe (Quick)
+
+สำหรับ user ที่มีสูตรจากช่องทางอื่นและต้องการแค่ timer
+
+```
+Recipes page → [+ สร้างสูตร]
+  → Quick form:
+      ชื่อสูตร (required)
+      Step type: developer / stop / fixer / wash_aid / wetting_agent (required)
+      ถ้า developer:
+        อุณหภูมิ + เวลา (required) หรือ temp table (optional)
+        Film: general หรือ specific film (optional)
+      Chemical format (optional — ถ้าต้องการ mixing guide)
+  → Save → Personal recipe (private)
+```
+
+### Flow: Create Personal Recipe (Full)
+
+สำหรับ user ที่ต้องการ mixing guide ครบถ้วน
+
+```
+Recipes page → [+ สร้างสูตร] → [สร้างแบบละเอียด]
+  → Step 1: Basic info
+      ชื่อ, description, step_type, film compatibility, tags
+  → Step 2: Chemical details
+      chemical_format → conditional fields (dilution / chemicals list)
+      mixing_steps (ถ้ามี)
+      storage info
+  → Step 3: Development timing (developer เท่านั้น)
+      temp table หรือ fixed time
+      agitation spec
+      reuse compensation (ถ้า reusable)
+  → Step 4: Preview + Save
+  → Personal recipe (private)
+```
+
+### Flow: Publish to Community
+
+```
+Personal recipe detail → [Publish ออก Community]
+  → Confirm: "สูตรนี้จะถูก review โดย admin ก่อน publish"
+  → status: pending_review
+  → Admin approve → status: published (ทุกคนเห็น)
+  → Admin reject → status: draft (พร้อม reason)
+```
+
+---
+
+## Flow 2 — Mixing Guidance
+
+### Overview
+Guided flow ผสมน้ำยา 1 recipe ต่อครั้ง จนได้ขวดพร้อมใช้ → add to Inventory
+
+### Entry points
+- Bottom nav → "Mix"
+- "ใช้ใน Mixing Guidance" จาก recipe detail
+- "ผสมน้ำยาใหม่" จาก My Kit / Inventory
+
+### Flow: Mixing (รวม Prep Mode)
+
+```
+Mix page
+  ├─ เลือก Recipe (multiple choice — checkboxes)
+  │     Filter: step_type / film / search
+  │     แสดง: personal + system recipes ที่มี mixing_steps
+  │     user tick ✓ ได้หลาย recipe พร้อมกัน
+  │     (เช่น tick developer + stop + fixer)
+  │
+  → [ดำเนินการต่อ] (enabled เมื่อเลือก ≥ 1)
+  │
+  → Summary screen
+  │     แสดง recipes ที่เลือกทั้งหมด
+  │     รวม ingredients overview (สรุปว่าต้องซื้อ/เตรียมอะไรบ้าง)
+  │
+  │     ┌─ [Prep Mode]           ← ดูทุก recipe overview ก่อน mix
+  │     └─ [Step-by-Step Mode]   ← walk through ทีละ recipe
+  │
+  ├── Prep Mode path:
+  │     แสดงทุก recipe พร้อมกัน — shopping list รวม + mix checklist แต่ละตัว
+  │     user ไล่ tick ✓ ได้เองตามสะดวก (ไม่บังคับลำดับ)
+  │
+  └── Step-by-Step Mode path (ทีละ recipe):
+        สำหรับแต่ละ recipe ที่เลือก (วนลูป):
+        
+          → เลือก Target Volume (scale จาก base_volume)
+          → เลือก Dilution (ถ้า recipe มี dilution — fixed/preset/open)
+          → [เริ่มผสม]
+
+          → Shopping List
+              แสดงสารเคมีทุกตัวที่ต้องชั่ง/ตวง (scaled ตาม target volume)
+              tick ✓ แต่ละรายการ
+              note ลำดับการใส่ที่ chemistry constraint กำหนด
+            → [เตรียมครบแล้ว]
+
+          → Mix Checklist
+              guided step-by-step ตาม mixing_steps ของ recipe
+              tick ✓ แต่ละ step
+              Warning โดด (safety-critical)
+              ไม่มี timer
+            → [ผสมเสร็จแล้ว]
+
+          → Prompt "บันทึกลง Inventory?"
+              ├─ [บันทึก] → Add Inventory Item form
+              │                prefill: ชื่อ (จาก recipe name), step_type, mixed_date = วันนี้
+              │                กรอก: bottle_type (one-shot / reusable), notes (optional)
+              │                → Save → recipe ถัดไป หรือ Mix page
+              └─ [ข้ามไป] → recipe ถัดไป หรือ Mix page
+```
+
+**พฤติกรรม:**
+- เลือกได้หลาย recipe แต่ guided ทีละ recipe เรียงตาม order ที่เลือก
+- `ready_to_use` recipes ไม่มี shopping list / mix checklist — ข้าม prompt add inventory โดยตรง
+- Prompt add inventory เป็น optional เสมอ
+- Prep Mode vs Step-by-Step เป็น UI state ล้วนๆ (ไม่มี entity ใน data model)
+
+---
+
+## Flow 3 — Inventory & Kit
+
+### Overview
+จัดการขวดน้ำยาที่มีอยู่จริง และ สร้าง/จัดการ kit presets
+
+### Entry points
+- Bottom nav → "Inventory"
+
+---
+
+### Flow 3A — Inventory Management
+
+```
+Inventory page
+  ├─ แสดง: ขวดทั้งหมด grouped by step_type หรือ status
+  │         badge: expiring soon / exhausted / near max rolls
+  ├─ [+ เพิ่มขวด] → Add manually (ถ้าไม่ได้ผ่าน Mixing Guidance)
+  │                   เลือก recipe → กรอก mixed_date, bottle_type
+  ├─ แตะขวด → Inventory item detail
+  │             แสดง: recipe ที่ใช้, วันผสม, shelf life countdown
+  │             แสดง: use_count / max_rolls
+  │             [แก้ไข notes], [Mark as exhausted], [ลบ]
+  └─ Expiry logic (คำนวณ real-time ไม่เก็บใน DB):
+        status = 'expired' ถ้า mixed_date + shelf_life_days < วันนี้
+        status = 'exhausted' ถ้า user mark หรือ one-shot ที่ใช้แล้ว
+```
+
+---
+
+### Flow 3B — Kit Management
+
+```
+Inventory page → [Kit] tab
+  ├─ แสดง: kit ทั้งหมด
+  │         warning badge ถ้า item ใดใน kit expired/exhausted
+  ├─ [+ สร้าง Kit ใหม่]
+  └─ แตะ kit → Kit detail
+                [แก้ไข], [ลบ]
+```
 
 ### Flow: Create Kit
 
 ```
-Inventory page
-  → [+ สร้าง Kit ใหม่]
-    → เลือก recipe ที่จะผูก
-      → ระบบ auto-generate slots จาก develop_steps ที่มี bath_ref
-        → ตั้งชื่อ Kit (เช่น "D-23 + Ilfosol Stop Set")
-        → ตั้งชื่อ Kit (เช่น "D-23 + Ilfosol Stop Set")
-        → ต่อแต่ละ slot:
-            แสดง step name (Bath A — Developer / Stop Bath / Fixer)
-            dropdown เลือกขวด → filter ตาม role ของ bath นั้น
-            (สามารถ leave blank สำหรับ stop/fixer — แต่ developer ต้องเลือก)
-        → Validation: developer slot ว่าง → block Save, stop/fixer slot ว่าง → warn เท่านั้น
-        → Save ✅
+[+ สร้าง Kit ใหม่]
+  → ตั้งชื่อ kit (เช่น "HP5+ Standard Set")
+  → กำหนด Slots:
+      slot_type ที่ต้องมี: developer (required), fixer (required)
+      slot_type แนะนำ: stop (warn ถ้าว่าง)
+      slot_type optional: wash_aid, wetting_agent
+
+      ต่อแต่ละ slot:
+        dropdown เลือก Inventory Item → filter ตาม step_type ที่ตรงกัน
+        (หลาย kit ใช้ item เดียวกันได้ — เช่น fixer ร่วม)
+
+  → Kit Validation (ก่อน Save):
+      ❌ developer slot ว่าง → block save
+      ❌ fixer slot ว่าง → block save
+      ⚠️ stop slot ว่าง → warn "ถ้า fixer เป็น reusable แนะนำ chemical stop"
+      ❌ pyro developer + non-alkaline fixer → block save + explain
+      ❌ paper fixer + film session → block save
+
+  → Save ✅
 ```
 
-**ตัวอย่าง slots สำหรับ Divided D-23:**
+**Two-bath developer:**
+- ถ้า inventory item ที่เลือกใน developer slot มี `recipe.constraints.is_two_bath === true`
+  → auto-add developer slot ที่สองสำหรับ Bath B
+  → ทั้งสอง slot อยู่ติดกันใน order เสมอ ห้ามแทรก stop ระหว่างกัน
+
+---
+
+## Flow 4 — Film Dev Guidance
+
+### Overview
+ล้างฟิล์มจริง — guided timer + deduct inventory usage + สร้าง history
+
+### Entry points
+- Bottom nav → "Develop"
+- Home → kit shortcut (1-tap)
+
+### 2 Entry Points สู่ Session
+
+**Entry point 1: จาก Kit** (แนะนำ — track inventory ครบ)
 ```
-Step "Bath A — Developer"   role=developer  → เลือก "Divided D-23 Bath A"
-Step "Bath B — Activator"   role=developer  → เลือก "Divided D-23 Bath B"
-Step "Stop Bath"            role=stop       → เลือก "Ilfostop"
-Step "Fixer"                role=fixer      → เลือก "Ilford Rapid Fixer"
+Develop page → [เลือก Kit]
+    แสดง kits ทั้งหมด พร้อม warning ถ้า item ใด expired/exhausted
+  → แตะ Kit → ไป Session Setup
 ```
 
-**ตัวอย่าง slots สำหรับ HC-110 (1-bath):**
+**Entry point 2: จาก Community/System Recipe** (ไม่ track inventory)
 ```
-Step "HC-110 Dil.B"         role=developer  → เลือก "HC-110 Working Solution"
-Step "Stop Bath"            role=stop       → เลือก "Ilfostop"
-Step "Fixer"                role=fixer      → เลือก "Ilford Rapid Fixer"
-```
-
-### Flow: Use Kit in Session
-
-```
-Step Preview
-  → [เลือก Kit] dropdown — แสดงเฉพาะ Kits ที่ผูกกับ recipe ที่เลือก
-      ├─ เลือก Kit → auto-fill slot dropdowns ด้วยขวดจาก Kit
-      │               ยังสามารถเปลี่ยนต่อ slot ได้ก่อนเริ่ม
-      └─ ข้ามหรือไม่มี Kit → เลือก developer bottle อย่างเดียว (Phase 1b behavior)
-  → Validation: developer slot ว่าง → block [เริ่ม session], stop/fixer slot ว่าง → warn (ไม่ track usage)
-  → [เริ่ม session]
-      → All Done 🎉 → rollsDeveloped++ สำหรับ bottles ที่ถูกเลือก (ทุก slot ที่มี bottleId)
-```
-
-### Data flow
-
-```
-Bottles (My Kit)
-    │
-    ├── สร้าง DevKit → KitSlot[] mapping stepId → bottleId
-    │
-    └── Session Setup (Step Preview)
-          เลือก Kit → load slots → resolve bottles → apply time compensation
-          เริ่ม timer
-          All Done → incrementRolls() สำหรับทุก slot ที่มี bottleId
-```
-
-### localStorage Keys (Phase 1c เพิ่ม)
-
-```
-my-kit-devkits  → DevKit[]  (แยกจาก my-kit เดิม — backward compatible)
+Develop page → [เลือก Recipe โดยตรง]
+    Browse community/system developer recipes
+  → แตะ recipe → ไป Session Setup (ไม่มี inventory tracking)
 ```
 
 ---
 
-## Flow 3 — Create Recipe (Phase 2, planned)
+### Flow: Session Setup
 
-### Journey (draft)
 ```
-Admin / My Recipes
-  → New Recipe
-    → Recipe Info (ชื่อ, description, tags, base volume)
-      → Add Bath/Step (loop)
-        → Add Chemical (ชื่อ, ปริมาณ per base volume, ลำดับ, note)
-        → Add Instruction step (text, warning flag, timer? )
-      → Development Time Table (temp × N/N+1/N-1)
-      → Review & Save
-        → บันทึกใน localStorage (Phase 2) / POST to API (Phase 3)
-```
+Session Setup
+  ├─ Film format: 35mm / 120 / 4x5
+  ├─ จำนวน rolls (validate: push/pull ต่างกันใน rolls หลายม้วน → warn)
+  ├─ อุณหภูมิจริง (°C) — ควรวัดก่อนเริ่มเสมอ
+  ├─ Development type: N-2 / N-1 / N / N+1 / N+2
+  └─ (ถ้ามาจาก Kit) แสดง slot summary + warning ถ้า item ใดมีปัญหา
 
-> ยังไม่ implement ใน Phase 1 แต่ออกแบบ data model รองรับไว้แล้ว
+  → ระบบคำนวณ:
+      development time จาก temp_table × dev_type
+      ถ้า developer เป็น reusable → +time compensation
+      ถ้า agitation method เป็น rotary → × 0.85
+
+  → [เริ่ม Session]
+```
 
 ---
 
-## Flow 4 — Community Contribute (Phase 3, planned)
+### Flow: Active Session (Timer)
 
-### Journey (draft)
 ```
-Browse Recipes
-  → Login / Sign up (required)
-    → Submit Recipe (ใช้ Create Recipe flow เดิม)
-      → Pending review (moderation queue)
-        → Approved → แสดงใน public recipe list
-        → Rejected → แจ้ง user พร้อมเหตุผล
-```
+  Active Timer (loop per step)
+    ├─ Countdown ใหญ่ — readable at a glance
+    ├─ Step name + progress indicator (step X of Y)
+    ├─ Step-specific warning แสดงตลอด (เช่น "Two-bath: ห้ามล้างน้ำก่อน Bath B")
+    ├─ Agitation reminder — notify ตาม agitation spec ของ recipe
+    ├─ [Pause] → dialog ก่อน back (ดู BACK_BUTTON_POLICY.md)
+    └─ หมดเวลา → notify → Step Complete
 
-> ต้องมี auth, moderation dashboard, และ backend API
+  Step Complete
+    ├─ Transition warning (เช่น "เท Bath B ทันที — ห้ามล้างน้ำ")
+    ├─ Step ถัดไป + เวลา
+    └─ [เริ่ม step ถัดไป] / [Emergency exit]
+
+  All Done 🎉
+    ├─ [ถ้ามาจาก Kit] → อัปเดต use_count ของ Inventory Items ทุกตัวใน slots
+    │                     (dedup ถ้า item เดียวอยู่หลาย slot)
+    ├─ บันทึก DevSession (history)
+    ├─ [ล้างฟิล์มม้วนใหม่] → กลับ Session Setup
+    └─ [กลับหน้าหลัก]
+```
 
 ---
 
-## Settings
+### Development Time Calculation
 
-| Setting | Type | Default | เก็บที่ |
-|---------|------|---------|--------|
-| Agitation reminder: Sound | boolean | true | localStorage |
-| Agitation reminder: Vibrate | boolean | true | localStorage |
-| Agitation reminder: Screen Flash | boolean | false | localStorage |
-| Theme | dark / light | dark | localStorage |
-| Unit | metric / imperial | metric | localStorage |
+```
+base_time = recipe.develop_timing.temp_table[temperature][dev_type]
 
-> ข้อมูลสูตรเก็บเป็น metric เสมอ — แปลงหน่วยเฉพาะตอน display
+ถ้า developer bottle เป็น reusable:
+  rolls = bottle.use_count
+  compensation = rolls 1-2: ×1.0, 3-4: ×1.25, 5-6: ×1.50, 7-8: ×1.75, 9+: warn
+  adjusted_time = base_time × compensation
+
+ถ้า agitation_method === 'rotary':
+  final_time = adjusted_time × 0.85
+else:
+  final_time = adjusted_time
+```
 
 ---
 
-## localStorage Keys
+## Dev Tab — Home (Default Landing)
 
 ```
-settings            → { sound, vibrate, screenFlash, theme, unit, mixingMode }
-                       mixingMode: "prep" | "step-by-step" — default ล่าสุดที่ user เลือก
-develop-session     → { stepOverrides, devType, tempCelsius, selectedKitId, slotSelections }  (persisted โดย Zustand)
-my-kit              → { equipment: EquipmentProfile, bottles: ChemicalBottle[] }  (Phase 1b)
-my-kit-devkits      → DevKit[]  (Phase 1c) — Kit presets สำหรับ session
+Dev tab (หน้าแรกเมื่อเปิดแอพ)
+  ├─ Kit Shortcuts (ถ้ามี kit)
+  │     แตะ kit → Session Setup พร้อม kit applied (1 tap)
+  ├─ [ถ้าไม่มี kit] → "สร้าง Kit แรกของคุณ" → My Kit tab
+  ├─ Recent Sessions (3–5 รายการล่าสุด)
+  │     tap → session detail (read-only)
+  └─ [+ เริ่ม session จาก recipe] → Entry point 2 (anonymous)
 ```
-
-> Type definitions ครบถ้วนอยู่ที่ `frontend/src/types/recipe.ts` — ดู `DATA_MODEL.md` สำหรับ field reference
 
 ---
 
-## Development Variables — ภาพรวม
+## localStorage Keys (Phase 2 — ก่อนมี backend)
 
-> Domain knowledge เรื่อง chemistry และอุปกรณ์แบบละเอียด (ไม่มี code) อยู่ที่: `../Analog Photographic/film-chemistry-research.md`
-> Section นี้แสดงเฉพาะ **การจัดวางตัวแปรใน app** (อยู่ที่ไหน, default คืออะไร, validate อย่างไร)
+| Key | เนื้อหา | Entity |
+|-----|---------|--------|
+| `v2-recipes` | personal recipes | `Recipe[]` |
+| `v2-inventory` | inventory items | `InventoryItem[]` |
+| `v2-kits` | kit presets | `Kit[]` |
+| `v2-sessions` | session history | `DevSession[]` |
+| `v2-settings` | app settings | settings object |
+| `v2-equipment` | equipment profile | `EquipmentProfile` |
 
-ตัวแปรทั้งหมดที่ส่งผลต่อกระบวนการล้างฟิล์ม แบ่งตาม frequency of change:
-
-### เปลี่ยนแทบไม่เคย (per person → Settings)
-| ตัวแปร | ที่อยู่ | หมายเหตุ |
-|--------|--------|---------|
-| Tank type | Settings + editable ใน session | เผื่อไปล้างบ้านเพื่อน |
-| Agitation method default | Settings + editable ใน session | Jobo ใช้เวลาต่างจาก inversion |
-| Water hardness | Settings เท่านั้น | กำหนดพื้นที่ — warn ถ้า hard water |
-| Pre-soak preference | Settings (default on/off) | preference ส่วนตัว |
-| Stop bath type | N/A — removed from Settings | Stop bath มีอยู่เสมอ: chemical bottle จาก Inventory ถ้ามี, fallback เป็น water-stop bath ในทุก recipe |
-| Wetting agent | Settings | reminder เท่านั้น ไม่กระทบ timing |
-
-### เปลี่ยนต่อ session → Step Preview / Session Setup
-| ตัวแปร | ที่อยู่ | หมายเหตุ |
-|--------|--------|---------|
-| Film format | Per session | กำหนด volume น้ำยา |
-| จำนวน rolls | Per session | กำหนด volume + warn ถ้า push ต่างกัน |
-| Development type (N/N+1/N-1) | Per session | core ของ session |
-| อุณหภูมิ | Per session (+ real-time adjust) | ต้องวัดก่อนเริ่ม |
-| One-shot vs reusable | Per session | กระทบ time compensation |
-| Tank type override | Per session | override Settings ได้ถ้าใช้อุปกรณ์ต่าง |
-| Agitation method override | Per session | override Settings ได้ |
-
-### เปลี่ยนทุกครั้ง (per roll → session context)
-| ตัวแปร | ที่อยู่ | หมายเหตุ |
-|--------|--------|---------|
-| Film stock | Per session | กระทบ recipe compatibility |
-| Developer + dilution | จาก recipe / My Kit | core |
-| Push/Pull stops | Per session | กระทบ time |
-
-### Batch validation rules
-- **Push ต่างกัน → บังคับ dev แยก**: ถ้า rolls ใน session เดียวมี push ต่างกัน → warn + block ไม่ให้เริ่มได้ user ต้อง dev แยก session
+> หมายเหตุ: prefix `v2-` ทุก key เพื่อแยกจาก V1 data (`my-kit`, `my-kit-devkits` ฯลฯ) ชัดเจน
 
 ---
 
-## Inventory (Phase 1b) + Kit Presets (Phase 1c)
+## Session State (Zustand — ไม่ใช่ localStorage)
 
-แนวคิด: app รู้จัก "ของที่ user มี" (Inventory) และ "ชุดน้ำยาที่ใช้ประจำ" (Kit) — integrate เข้า flow หลักแทนที่จะเป็น section แยก
+```ts
+// developStore.ts (V2)
+type DevelopStoreState = {
+  // Session config
+  sessionSource: SessionSource | null       // { type: 'kit', ... } | { type: 'recipes', ... }
+  filmFormat: FilmFormat | null
+  rollsCount: number
+  temperatureCelsius: number | null
+  devType: DevType                          // 'N-2' | 'N-1' | 'N' | 'N+1' | 'N+2'
 
-### Entry points — Inventory
+  // Equipment — prefill จาก user settings, override ได้ per-session (ไม่ save กลับ)
+  agitationMethod: AgitationMethod          // temporary session override
+  tankType: string | null                   // temporary session override
 
-| จุดเข้า | ที่มา | action |
-|---------|-------|--------|
-| **Home navbar icon 🧴** | ทุกเวลา | ดู/แก้ไข/ลบขวด, Equipment Profile, จัดการ Kit presets |
-| **Mixing Done prompt** | หลังผสมน้ำยาเสร็จ (ทุก bath ที่ `mixing_required === true`) | เพิ่มขวดใหม่ (prefill จากสูตร) |
-| **Step Preview** | ก่อนเริ่ม develop session | เลือก Kit / ขวดต่อ slot → track rolls |
-| **RecipeSelectPage Kit shortcut** | เลือกสูตร | แตะ Kit → ข้าม Step Preview setup ส่วน Kit selection |
+  // Timer state
+  currentStepIndex: number
+  isRunning: boolean
+  isPaused: boolean
+  remainingSeconds: number
 
-### Data flow
-```
-Mixing Guide → Done (mixing_required bath)
-    ↓ (optional prompt)
-    เพิ่มขวดใน Inventory   ←────────────────────┐
-                                                 │
-RecipeSelectPage                                 │
-    └─ Kit shortcut (1 tap) ──────────────────────────────────────┐
-                                                                   │
-Step Preview → เลือก Kit/ขวด → Active Timer → All Done           │
-    ↓ prefill slots                              ↓                 │
-    time compensation                     rollsDeveloped++  ←──────┘
-    (reusable bottle)                     (ทุก slot ที่มี bottleId)
-```
+  // Computed
+  calculatedSteps: SessionStep[]            // steps พร้อม final_duration_seconds แล้ว
+}
 
-### ChemicalBottle entity
-```
-ChemicalBottle {
-  id:               uuid
-  developerName:    string          // "Divided D-23 Bath A", "HC-110 Working Solution"
-                                    // qualified เสมอ — ไม่ใช้ชื่อสั้นแบบ "Bath A"
-  role:             'developer' | 'stop' | 'fixer' | 'wash_aid' | 'wetting_agent'
-                                    // ใช้ filter ขวดให้ถูก slot ใน DevKit
-  defaultDilution?: string          // default dilution, e.g., "1:25"
-  type:             'one-shot' | 'reusable'
-  mixedAt:          string          // ISO date — วันที่ผสมหรือเปิดขวด
-  shelfLifeDays?:   number          // มาจาก recipe data — คำนวณ expiry warning
-  rollsDeveloped:   number          // track จาก sessions จริง
-  maxRolls?:        number          // มาจาก recipe data — warn เมื่อใกล้ครบ
-  notes?:           string
-  createdAt:        string          // ISO date
-  updatedAt:        string          // ISO date
+// mixStore.ts (V2) — Mixing Guidance UI state
+type MixStoreState = {
+  selectedRecipeIds: string[]               // recipes ที่ tick เลือก
+  mode: 'prep' | 'step_by_step' | null      // เลือกหลัง summary screen
+  currentRecipeIndex: number                // ใช้ใน step_by_step mode
 }
 ```
 
-### Architecture
-- **Phase 1b (ปัจจุบัน):** My Kit เก็บใน localStorage key `my-kit` — throwaway data
-- **Phase 3 (with backend):** My Kit migrate ไป DB พร้อม auth — refactor ที่ repository layer เท่านั้น
-- ดู `DATA_MODEL.md` → My Kit section สำหรับ entity types ครบถ้วน
-- ดู `ARCHITECTURE.md` → Repository Pattern สำหรับ `KitRepository` interface
+---
+
+## Chemistry Constraints ที่ UI ต้องรู้
+
+| Constraint | ที่เกิด | สิ่งที่ UI ทำ |
+|-----------|---------|-------------|
+| Two-bath: ห้ามแทรก stop ระหว่าง Bath A กับ Bath B | Kit creation | Auto-order slots, ไม่ให้แทรก stop ระหว่างกัน |
+| Pyro developer + alkaline fixer required | Kit validation | Block save + อธิบาย |
+| Paper fixer + film session | Kit validation | Block save + อธิบาย |
+| Reusable fixer + water stop | Kit validation warning | ⚠️ warn เท่านั้น ไม่ block |
+| Fixer exhausted | Session start | Block start |
+
+> Domain knowledge ครบที่: `../Analog Photographic/film-chemistry-research.md`
 
 ---
 
-## Phase 1 Scope (Frontend only)
+## Architecture Decisions (สรุป)
 
-**In scope:**
-- Flow 1: Mixing Guide (Divided D-23 ครบทุก bath) รวม Prep Mode / Shopping List
-- Flow 2: Develop Session (Divided D-23)
-- Settings (agitation, theme, unit, prep mode default)
-- PWA (offline, installable)
-- Static JSON recipes
-
-**Out of scope (Phase 2+):**
-- Flow 3 & 4 (Create / Contribute recipe)
-- Backend API
-- Auth / accounts
-- HC-110, Rodinal, Caffenol recipes (data only, not UI logic)
+| ประเด็น | Decision |
+|---------|---------|
+| Film catalog | `films[]` เป็น string array (kebab-case slug) — ไม่ normalize เป็น entity |
+| Two-bath slot ordering | Auto-generate โดย system เมื่อ detect `is_two_bath = true` |
+| Session entry point 2 | Anonymous session — ไม่บังคับ inventory, ไม่ update use_count |
+| Equipment profile | User settings (default) + session override temporary เท่านั้น |
+| Prep mode | Multi-select recipes → summary → เลือก Prep Mode หรือ Step-by-Step |
+| Navigation | 5 tabs: Dev / Mix / Recipes / My Kit / Settings |
+| Responsive nav | Bottom bar (mobile) → Left sidebar (tablet 768px+) |

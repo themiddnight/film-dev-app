@@ -3,6 +3,13 @@
 > การออกแบบ data model สำหรับ B&W film development recipes
 > อ้างอิงจาก: Massive Dev Chart, filmdev.org, Ilford/Kodak/Adox technical datasheets
 > Last updated: 2026-04-04
+>
+> ⚠️ **V2 NOTE** — Root entity `Recipe` (section 2.1) และ `Bath` (section 2.2) ถูก supersede โดย V2 แล้ว
+> ดู `DATA_MODEL_V2.md` สำหรับ `Recipe` และ `InventoryItem` แบบใหม่
+>
+> **Sub-types ที่ยังใช้ได้ใน V2 โดยไม่เปลี่ยน:**
+> `DilutionSpec` (2.3) · `Chemical` (2.4) · `MixingStep` + `StepToken` (2.5) · `DevelopStep` (2.6) · `DurationSpec` (2.7) · `AgitationSpec` (2.8)
+> `Chemistry Modularity` (section 6) ยังถูกต้องทั้งหมด
 
 ---
 

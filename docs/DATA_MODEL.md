@@ -1,4 +1,12 @@
-# Film Dev Guidance — Data Model
+# Film Dev Guidance — Data Model (V1 Only)
+
+> ⚠️ **DEPRECATED for V2** — เอกสารนี้ใช้ได้เฉพาะกับ V1 codebase เท่านั้น
+> สำหรับ V2 architecture ดูที่ **`DATA_MODEL_V2.md`** แทน
+>
+> เก็บไว้เป็น reference สำหรับ V1 types ที่ยังอยู่ใน codebase
+> อย่านำ V1 types มาใช้ใน V2 โดยไม่ตรวจสอบก่อน
+
+---
 
 ## Overview
 
