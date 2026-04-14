@@ -1,19 +1,21 @@
-// hooks/useRecipes.ts
-// Data hook สำหรับ recipes — wraps RecipeRepository
-// Components ใช้ hook นี้แทนการ import static data โดยตรง
-
-import { useState, useEffect } from 'react'
-import type { Recipe } from '../types/recipe'
+import { useCallback, useEffect, useState } from 'react'
 import { recipeRepo } from '../repositories'
+import type { Recipe, RecipeFilter, RecipeStepType } from '../types/recipe'
 
-type RecipesState = {
+type UseRecipesState = {
   recipes: Recipe[]
   loading: boolean
   error: string | null
 }
 
-export function useRecipes(): RecipesState {
-  const [state, setState] = useState<RecipesState>({
+type RecipeByIdState = {
+  recipe: Recipe | null
+  loading: boolean
+  error: string | null
+}
+
+export function useRecipes(filter: RecipeFilter): UseRecipesState {
+  const [state, setState] = useState<UseRecipesState>({
     recipes: [],
     loading: true,
     error: null,
@@ -21,23 +23,59 @@ export function useRecipes(): RecipesState {
 
   useEffect(() => {
     let cancelled = false
-    recipeRepo.getAll().then((data) => {
-      if (!cancelled) setState({ recipes: data, loading: false, error: null })
-    }).catch((err: unknown) => {
-      if (!cancelled) {
-        setState({ recipes: [], loading: false, error: String(err) })
-      }
-    })
-    return () => { cancelled = true }
-  }, [])
+
+    recipeRepo
+      .getAll(filter)
+      .then((recipes) => {
+        if (!cancelled) setState({ recipes, loading: false, error: null })
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setState({ recipes: [], loading: false, error: String(err) })
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [filter.author_type, filter.search, filter.step_type, filter.visibility, filter.film])
 
   return state
 }
 
-type RecipeByIdState = {
-  recipe: Recipe | null
-  loading: boolean
-  error: string | null
+export function useRecipeMutations() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const saveRecipe = useCallback(async (recipe: Recipe) => {
+    setLoading(true)
+    setError(null)
+    try {
+      await recipeRepo.save(recipe)
+    } catch (err: unknown) {
+      setError(String(err))
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const deleteRecipe = useCallback(async (id: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      await recipeRepo.delete(id)
+    } catch (err: unknown) {
+      setError(String(err))
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const getByStepType = useCallback(async (type: RecipeStepType) => {
+    return recipeRepo.getByStepType(type)
+  }, [])
+
+  return { saveRecipe, deleteRecipe, getByStepType, loading, error }
 }
 
 export function useRecipeById(id: string | undefined): RecipeByIdState {
@@ -52,16 +90,20 @@ export function useRecipeById(id: string | undefined): RecipeByIdState {
     if (!id) return
 
     let cancelled = false
-    recipeRepo.getById(id).then((data) => {
-      if (!cancelled) setState({ recipe: data, loading: false, error: null, resolvedId: id })
-    }).catch((err: unknown) => {
-      if (!cancelled) setState({ recipe: null, loading: false, error: String(err), resolvedId: id })
-    })
+    recipeRepo
+      .getById(id)
+      .then((recipe) => {
+        if (!cancelled) setState({ recipe, loading: false, error: null, resolvedId: id })
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setState({ recipe: null, loading: false, error: String(err), resolvedId: id })
+      })
 
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [id])
 
   const loading = state.loading || (!!id && state.resolvedId !== id)
-
   return { recipe: state.recipe, loading, error: state.error }
 }

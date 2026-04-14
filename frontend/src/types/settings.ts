@@ -3,7 +3,7 @@
 export type Theme = 'dark' | 'light'
 export type Unit = 'metric' | 'imperial'
 export type MixingMode = 'prep' | 'step-by-step'
-export type DevType = 'N-1' | 'N' | 'N+1'
+export type DevType = 'N-2' | 'N-1' | 'N' | 'N+1' | 'N+2'
 
 export type Settings = {
   // Agitation reminders

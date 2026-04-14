@@ -1,6 +1,6 @@
 # Film Dev Guidance — Architecture
 
-> Last updated: 2026-04-04
+> Last updated: 2026-04-14
 > Stack: Bun · React 19 · Vite · Tailwind v4 · DaisyUI v5 · Zustand
 
 ---
@@ -11,14 +11,14 @@ App แบ่งข้อมูลออกเป็น 2 layer ที่ชั�
 
 ```
 Layer 1 — Knowledge (static/curated)
-  Recipes, timing tables, chemical data, agitation specs
-  Phase 1: TypeScript static files
-  Phase 2+: PostgreSQL DB, read via API
+ Recipes, timing tables, chemical data, agitation specs
+ Current: TypeScript static files + local personal recipes
+ Phase 2+: PostgreSQL DB, read via API
 
 Layer 2 — User's World (dynamic/personal)
-  My Kit (equipment profile + chemical bottles), session history, settings
-  Phase 1-2: localStorage (throwaway — no migration plan)
-  Phase 3: PostgreSQL tied to user account
+ Inventory, kits, session history, settings
+ Current: localStorage (throwaway — no migration plan)
+ Phase 3: PostgreSQL tied to user account
 ```
 
 ### ทำไม throwaway ได้?
@@ -37,12 +37,12 @@ Service/component ไม่รู้ว่า data มาจากไหน — 
 
 ```
 Component / Hook
-      │
-      ▼
-  Repository Interface   ← นี่คือ boundary
-      │
-      ├── LocalRepository (Phase 1-2)
-      └── ApiRepository   (Phase 3)
+ │
+ ▼
+ Repository Interface ← นี่คือ boundary
+ │
+ ├── LocalRepository (current)
+ └── ApiRepository (Phase 3)
 ```
 
 ### Interface Definitions
@@ -50,34 +50,35 @@ Component / Hook
 ```ts
 // src/repositories/RecipeRepository.ts
 export interface RecipeRepository {
-  getAll(): Promise<Recipe[]>
-  getById(id: string): Promise<Recipe | null>
+ getAll(filter?: RecipeFilter): Promise<Recipe[]>
+ getById(id: string): Promise<Recipe | null>
+ getByStepType(type: RecipeStepType): Promise<Recipe[]>
+ save(recipe: Recipe): Promise<void>
+ delete(id: string): Promise<void>
 }
 
 // src/repositories/KitRepository.ts
 export interface KitRepository {
-  getKit(): Promise<UserKit>
-  saveEquipment(profile: EquipmentProfile): Promise<void>
-  addBottle(bottle: Omit<ChemicalBottle, 'id' | 'createdAt' | 'updatedAt'>): Promise<ChemicalBottle>
-  updateBottle(id: string, updates: Partial<ChemicalBottle>): Promise<void>
-  deleteBottle(id: string): Promise<void>
-  incrementRolls(bottleId: string, count?: number): Promise<void>
+ getAll(): Promise<Kit[]>
+ getById(id: string): Promise<Kit | null>
+ save(kit: Kit): Promise<void>
+ delete(id: string): Promise<void>
 }
 ```
 
-### Phase 2 Implementations (local)
+### Current Implementations (local)
 
 ```ts
 // src/repositories/local/LocalRecipeRepository.ts
 export class LocalRecipeRepository implements RecipeRepository {
-  async getAll() { return [...allRecipes] }  // import จาก src/data/
-  async getById(id: string) { return allRecipes.find(r => r.id === id) ?? null }
+ async getAll(filter?: RecipeFilter) { /* system + personal */ }
+ async getById(id: string) { /* ... */ }
 }
 
 // src/repositories/local/LocalKitRepository.ts
 export class LocalKitRepository implements KitRepository {
-  private readonly KEY = 'my-kit'
-  // reads/writes localStorage
+ private readonly KEY = 'kits'
+ // reads/writes localStorage
 }
 ```
 
@@ -86,9 +87,9 @@ export class LocalKitRepository implements KitRepository {
 ```ts
 // src/repositories/api/ApiRecipeRepository.ts
 export class ApiRecipeRepository implements RecipeRepository {
-  constructor(private http: HttpClient) {}
-  async getAll() { return this.http.get<Recipe[]>('/api/v1/recipes') }
-  async getById(id: string) { return this.http.get<Recipe>(`/api/v1/recipes/${id}`) }
+ constructor(private http: HttpClient) {}
+ async getAll(filter?: RecipeFilter) { return this.http.get<Recipe[]>('/api/v1/recipes', { params: filter }) }
+ async getById(id: string) { return this.http.get<Recipe>(`/api/v1/recipes/${id}`) }
 }
 ```
 
@@ -100,8 +101,10 @@ export class ApiRecipeRepository implements RecipeRepository {
 // src/repositories/index.ts
 export const recipeRepo: RecipeRepository = new LocalRecipeRepository()
 export const kitRepo: KitRepository = new LocalKitRepository()
+export const inventoryRepo: InventoryRepository = new LocalInventoryRepository()
+export const sessionRepo: SessionRepository = new LocalSessionRepository()
 
-// ตอน Phase 3 เปลี่ยนแค่ 2 บรรทัดนี้:
+// ตอน Phase 3 เปลี่ยน implementation ฝั่งนี้:
 // export const recipeRepo: RecipeRepository = new ApiRecipeRepository(httpClient)
 // export const kitRepo: KitRepository = new ApiKitRepository(httpClient)
 ```
@@ -112,39 +115,45 @@ export const kitRepo: KitRepository = new LocalKitRepository()
 
 ```
 frontend/src/
-├── data/                    # Layer 1 static data (recipe TypeScript files)
-│   ├── divided-d23.ts
-│   ├── hc110.ts
-│   ├── d76.ts
-│   └── index.ts
+├── data/
+│ └── systemRecipes.ts # Layer 1 curated recipes
 │
-├── repositories/            # Data access layer
-│   ├── RecipeRepository.ts  # interface
-│   ├── KitRepository.ts     # interface
-│   ├── local/
-│   │   ├── LocalRecipeRepository.ts
-│   │   └── LocalKitRepository.ts
-│   ├── api/                 # (Phase 3 — empty folder for now)
-│   └── index.ts             # exports active implementations
+├── repositories/
+│ ├── RecipeRepository.ts
+│ ├── InventoryRepository.ts
+│ ├── KitRepository.ts
+│ ├── SessionRepository.ts
+│ ├── local/
+│ │ ├── LocalRecipeRepository.ts
+│ │ ├── LocalInventoryRepository.ts
+│ │ ├── LocalKitRepository.ts
+│ │ └── LocalSessionRepository.ts
+│ ├── api/
+│ └── index.ts
 │
 ├── types/
-│   ├── recipe.ts            # Recipe, Bath, DevelopStep, etc.
-│   ├── kit.ts               # ChemicalBottle, EquipmentProfile, UserKit (Phase 1b)
-│   └── settings.ts
+│ ├── recipe.ts
+│ ├── inventory.ts
+│ ├── kit.ts
+│ ├── session.ts
+│ └── settings.ts
 │
-├── store/                   # Zustand stores (UI state, not data fetching)
-│   ├── developStore.ts
-│   ├── mixingStore.ts
-│   └── settingsStore.ts
+├── store/
+│ ├── devSessionStore.ts
+│ ├── mixingStore.ts
+│ ├── equipmentStore.ts
+│ └── settingsStore.ts
 │
-├── hooks/                   # Data hooks (call repositories)
-│   ├── useRecipes.ts        # wraps RecipeRepository
-│   ├── useKit.ts            # wraps KitRepository (Phase 1b)
-│   ├── useTimer.ts
-│   └── useUnit.ts
+├── hooks/
+│ ├── useRecipes.ts
+│ ├── useInventory.ts
+│ ├── useKits.ts
+│ └── useSessions.ts
 │
 ├── components/
 ├── pages/
+│ ├── dev/
+│ └── mix/
 └── App.tsx
 ```
 
@@ -157,7 +166,7 @@ frontend/src/
 1. **UUID ทุก entity** — ไม่ใช้ array index หรือ sequential integer เป็น ID
 2. **`createdAt` + `updatedAt`** — ISO string ทุก user-owned entity
 3. **Metric เสมอ** — เก็บ ml, g, °C ใน data — แปลงหน่วยเฉพาะตอน display
-4. **Source separation** — Layer 1 (recipes) และ Layer 2 (kit) อยู่คนละ folder และ localStorage key แยกกัน
+4. **Source separation** — Layer 1 (recipes) และ Layer 2 (inventory/kits/sessions) อยู่คนละ folder และ localStorage key แยกกัน
 
 ---
 
@@ -167,7 +176,7 @@ frontend/src/
 - Repository interfaces (swap implementation เท่านั้น)
 - Type definitions ใน `types/`
 - Zustand stores (UI state ไม่ใช่ data fetching)
-- Component/page structure
+- component/page structure
 
 ## What WILL Need Refactoring (Phase 3)
 

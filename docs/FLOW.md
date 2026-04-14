@@ -1,12 +1,10 @@
-# Film Dev Guidance — User Flow V2
+# Film Dev Guidance — User Flow
 
-> **Status:** Planning · V2 (ยังไม่ implement)
-> **Last updated:** 2026-04-14
+> **Status:** Implemented · > **Last updated:** 2026-04-14
 > **Icon library:** Lucide React
 
-> ⚠️ **V2 Rewrite** — เอกสารนี้ describe flows ของ V2 ทั้งหมด
-> V1 flow (FLOW.md เดิม) ถูก archive ไว้ใน git history
-> Product concept ดูที่: `../Analog Photographic/film-dev-guidance-ux-requirements-v2.md`
+> เอกสารนี้ describe flows ของ codebase ปัจจุบันหลัง cleanup V1 ออกแล้ว
+> Product concept ดูที่: `../Analog Photographic/film-dev-guidance-ux-requirements.md`
 
 ---
 
@@ -27,7 +25,7 @@
 
 ---
 
-### V2 App Entities
+### App Entities
 
 | คำ | ความหมาย | หมายเหตุ |
 |----|----------|---------|
@@ -58,11 +56,11 @@ Navigation: **Bottom bar บน mobile / Left sidebar บน tablet (768px+) แ
 
 ```
 App
-├── Dev       — Film Dev session (timer, entry point หลัก)
-├── Mix       — Mixing Guidance (multi-select recipe → guided flow → inventory)
-├── Recipes   — Browse / Create / Favorites / Community recipes
-├── My Kit    — Inventory + Kits (sub-nav ภายใน tab)
-└── Settings  — Equipment profile, preferences
+├── Dev — Film Dev session (timer, entry point หลัก)
+├── Mix — Mixing Guidance (multi-select recipe → guided flow → inventory)
+├── Recipes — Browse / Create / Favorites / Community recipes
+├── My Kit — Kits landing (`/kits`)
+└── Settings — Equipment profile, preferences
 ```
 
 | Tab | Icon (Lucide) | Default landing |
@@ -70,15 +68,19 @@ App
 | Dev | `Timer` | ใช่ — หน้าแรกที่เปิดแอพ |
 | Mix | `FlaskConical` | ไม่ |
 | Recipes | `BookOpen` | ไม่ |
-| My Kit | `Package` | ไม่ |
+| My Kit | `Package` | ไม่ — landing ที่ `/kits` |
 | Settings | `Settings` | ไม่ |
+
+หมายเหตุ implementation ปัจจุบัน:
+- Inventory อยู่ที่ `/inventory` และเข้าได้จาก Home โดยตรง
+- Bottom nav / sidebar ตอนนี้ชี้ไปที่ Kits ไม่ได้มี tab แยกสำหรับ Inventory
 
 ---
 
 ## Flow 1 — Manage Recipes
 
 ### Overview
-Section สำหรับจัดการสูตรทั้งหมดของ user และ browse community
+Section สำหรับจัดการสูตร system และ personal
 
 ### Entry points
 - Bottom nav → "Recipes"
@@ -88,14 +90,14 @@ Section สำหรับจัดการสูตรทั้งหมดข
 
 ```
 Recipes page
-  ├─ Personal tab
-  │     แสดง: personal recipes (private + published)
-  │     → แตะ recipe → Recipe detail
-  └─ Community tab
-        Filter: step_type / film / search
-        → แตะ recipe → Recipe detail
-              → [Save เป็น Favourite] ← เพิ่มใน personal list
-              → [ใช้ใน Mixing Guidance] ← shortcut ข้ามไป Flow 2
+ ├─ Personal tab
+ │ แสดง: personal recipes
+ │ → แตะ recipe → Recipe detail
+ └─ System tab
+ Filter: step_type / film / search
+ → แตะ recipe → Recipe detail
+ → [Save เป็น Favourite] ← เพิ่มใน personal list
+ → [ใช้ใน Mixing Guidance] ← shortcut ข้ามไป Flow 2
 ```
 
 ### Flow: Create Personal Recipe (Quick)
@@ -104,14 +106,14 @@ Recipes page
 
 ```
 Recipes page → [+ สร้างสูตร]
-  → Quick form:
-      ชื่อสูตร (required)
-      Step type: developer / stop / fixer / wash_aid / wetting_agent (required)
-      ถ้า developer:
-        อุณหภูมิ + เวลา (required) หรือ temp table (optional)
-        Film: general หรือ specific film (optional)
-      Chemical format (optional — ถ้าต้องการ mixing guide)
-  → Save → Personal recipe (private)
+ → Quick form:
+ ชื่อสูตร (required)
+ Step type: developer / stop / fixer / wash_aid / wetting_agent (required)
+ ถ้า developer:
+ อุณหภูมิ + เวลา (required) หรือ temp table (optional)
+ Film: general หรือ specific film (optional)
+ Chemical format (optional — ถ้าต้องการ mixing guide)
+ → Save → Personal recipe (private)
 ```
 
 ### Flow: Create Personal Recipe (Full)
@@ -120,28 +122,30 @@ Recipes page → [+ สร้างสูตร]
 
 ```
 Recipes page → [+ สร้างสูตร] → [สร้างแบบละเอียด]
-  → Step 1: Basic info
-      ชื่อ, description, step_type, film compatibility, tags
-  → Step 2: Chemical details
-      chemical_format → conditional fields (dilution / chemicals list)
-      mixing_steps (ถ้ามี)
-      storage info
-  → Step 3: Development timing (developer เท่านั้น)
-      temp table หรือ fixed time
-      agitation spec
-      reuse compensation (ถ้า reusable)
-  → Step 4: Preview + Save
-  → Personal recipe (private)
+ → Step 1: Basic info
+ ชื่อ, description, step_type, film compatibility, tags
+ → Step 2: Chemical details
+ chemical_format → conditional fields (dilution / chemicals list)
+ mixing_steps (ถ้ามี)
+ storage info
+ → Step 3: Development timing (developer เท่านั้น)
+ temp table หรือ fixed time
+ agitation spec
+ reuse compensation (ถ้า reusable)
+ → Step 4: Preview + Save
+ → Personal recipe (private)
 ```
 
 ### Flow: Publish to Community
 
+> ยังไม่ implement ใน frontend ปัจจุบัน
+
 ```
 Personal recipe detail → [Publish ออก Community]
-  → Confirm: "สูตรนี้จะถูก review โดย admin ก่อน publish"
-  → status: pending_review
-  → Admin approve → status: published (ทุกคนเห็น)
-  → Admin reject → status: draft (พร้อม reason)
+ → Confirm: "สูตรนี้จะถูก review โดย admin ก่อน publish"
+ → status: pending_review
+ → Admin approve → status: published (ทุกคนเห็น)
+ → Admin reject → status: draft (พร้อม reason)
 ```
 
 ---
@@ -153,65 +157,74 @@ Guided flow ผสมน้ำยา 1 recipe ต่อครั้ง จนไ
 
 ### Entry points
 - Bottom nav → "Mix"
-- "ใช้ใน Mixing Guidance" จาก recipe detail
-- "ผสมน้ำยาใหม่" จาก My Kit / Inventory
+- "Save as favourite" / browse recipe จาก Recipes แล้วเข้าผ่าน Mix เอง
+- Home → "Mixing Guide ()"
 
-### Flow: Mixing (รวม Prep Mode)
+### Flow: Mixing (Prep Mode vs Step-by-Step)
 
 ```
 Mix page
-  ├─ เลือก Recipe (multiple choice — checkboxes)
-  │     Filter: step_type / film / search
-  │     แสดง: personal + system recipes ที่มี mixing_steps
-  │     user tick ✓ ได้หลาย recipe พร้อมกัน
-  │     (เช่น tick developer + stop + fixer)
-  │
-  → [ดำเนินการต่อ] (enabled เมื่อเลือก ≥ 1)
-  │
-  → Summary screen
-  │     แสดง recipes ที่เลือกทั้งหมด
-  │     รวม ingredients overview (สรุปว่าต้องซื้อ/เตรียมอะไรบ้าง)
-  │
-  │     ┌─ [Prep Mode]           ← ดูทุก recipe overview ก่อน mix
-  │     └─ [Step-by-Step Mode]   ← walk through ทีละ recipe
-  │
-  ├── Prep Mode path:
-  │     แสดงทุก recipe พร้อมกัน — shopping list รวม + mix checklist แต่ละตัว
-  │     user ไล่ tick ✓ ได้เองตามสะดวก (ไม่บังคับลำดับ)
-  │
-  └── Step-by-Step Mode path (ทีละ recipe):
-        สำหรับแต่ละ recipe ที่เลือก (วนลูป):
-        
-          → เลือก Target Volume (scale จาก base_volume)
-          → เลือก Dilution (ถ้า recipe มี dilution — fixed/preset/open)
-          → [เริ่มผสม]
+ ├─ เลือก Recipe (multiple choice — checkboxes)
+ │ Filter: step_type / film / search
+ │ แสดง: personal + system recipes ที่มี mixing_steps
+ │ user tick ✓ ได้หลาย recipe พร้อมกัน
+ │ (เช่น tick developer + stop + fixer)
+ │
+ → [ดำเนินการต่อ] (enabled เมื่อเลือก ≥ 1)
+ │
+ → Summary screen
+ │ แสดง recipes ที่เลือกทั้งหมด + ingredients count
+ │ เลือก Target Volume (ml) สำหรับ dilution scaling
+ │
+ │ ┌─ [Prep Mode]
+ │ │ "Prepare all chemicals first, then mix them one by one"
+ │ │
+ └─ [Step-by-Step Mode]
+   "Prepare and mix one step at a time, repeat for each step"
+ │
+ ├── Prep Mode path:
+ │ Phase 1: Prepare All Chemicals
+ │ → แสดง chemicals จากทั้ง recipes + amount per liter
+ │ → user tick ✓ แต่ละ chemical ระหว่างชั่ง/ตวง
+ │ → [Continue to Mix] เมื่อ all chemicals ready
+ │
+ │ Phase 2: Mix All Chemicals
+ │ → แสดง mixing_steps จากทั้ง recipes ตามลำดับ
+ │ → user tick ✓ แต่ละ step ระหว่าง mix
+ │ → [Continue to Inventory] เมื่อเสร็จแล้ว
+ │
+ │ Phase 3: Add Bottles to Inventory
+ │ → Select checkboxes: recipes จะบันทึกเป็น bottle
+ │ → [Save to Inventory] → บันทึกทั้งหมด
+ │ จาก: name (recipe name), mixed_date, bottle_type, step_type
+ │
+ └── Step-by-Step Mode path (วนลูป ทีละ recipe):
+ สำหรับแต่ละ recipe ที่เลือก (เรียงตาม order):
+  → Shopping List
+    แสดง chemicals scaled ตาม target volume
+    user tick ✓ แต่ละรายการ
+    → [เตรียมครบแล้ว]
 
-          → Shopping List
-              แสดงสารเคมีทุกตัวที่ต้องชั่ง/ตวง (scaled ตาม target volume)
-              tick ✓ แต่ละรายการ
-              note ลำดับการใส่ที่ chemistry constraint กำหนด
-            → [เตรียมครบแล้ว]
+  → Mix Checklist
+    guided step-by-step ตาม mixing_steps ของ recipe
+    user tick ✓ แต่ละ step
+    Warning โดด (safety-critical)
+    → [ผสมเสร็จแล้ว]
 
-          → Mix Checklist
-              guided step-by-step ตาม mixing_steps ของ recipe
-              tick ✓ แต่ละ step
-              Warning โดด (safety-critical)
-              ไม่มี timer
-            → [ผสมเสร็จแล้ว]
+  → Add to Inventory (optional)
+    ├─ [บันทึก] → save bottle → ไป recipe ถัดไป
+    └─ [ข้ามไป] → recipe ถัดไป เลย
 
-          → Prompt "บันทึกลง Inventory?"
-              ├─ [บันทึก] → Add Inventory Item form
-              │                prefill: ชื่อ (จาก recipe name), step_type, mixed_date = วันนี้
-              │                กรอก: bottle_type (one-shot / reusable), notes (optional)
-              │                → Save → recipe ถัดไป หรือ Mix page
-              └─ [ข้ามไป] → recipe ถัดไป หรือ Mix page
+ → After all recipes: Final Inventory Summary + ให้เลือก bottles ที่จะบันทึก
 ```
 
 **พฤติกรรม:**
-- เลือกได้หลาย recipe แต่ guided ทีละ recipe เรียงตาม order ที่เลือก
-- `ready_to_use` recipes ไม่มี shopping list / mix checklist — ข้าม prompt add inventory โดยตรง
-- Prompt add inventory เป็น optional เสมอ
-- Prep Mode vs Step-by-Step เป็น UI state ล้วนๆ (ไม่มี entity ใน data model)
+- **Prep Mode**: ทำให้ user เตรียมทั้ง setup ก่อน แล้วค่อยประมวลผล mix แบบ systematic
+- **Step-by-Step**: ให้ user ทำทีละ step เพื่อ focus ในการ mix หละ bottling
+- `ready_to_use` recipes ไม่มี prep/mix checklist — ข้าม prompt add inventory โดยตรง
+- Mode selection เป็น UI state ล้วนๆ (ไม่มี entity ใน data model)
+- Target volume ใช้ดำเนินการ scaling สำหรับ dilutions ได้
+
 
 ---
 
@@ -221,25 +234,26 @@ Mix page
 จัดการขวดน้ำยาที่มีอยู่จริง และ สร้าง/จัดการ kit presets
 
 ### Entry points
-- Bottom nav → "Inventory"
+- Home → "Inventory ()"
+- Home / sidebar → "My Kit" (`/kits`)
 
 ---
 
 ### Flow 3A — Inventory Management
 
 ```
-Inventory page
-  ├─ แสดง: ขวดทั้งหมด grouped by step_type หรือ status
-  │         badge: expiring soon / exhausted / near max rolls
-  ├─ [+ เพิ่มขวด] → Add manually (ถ้าไม่ได้ผ่าน Mixing Guidance)
-  │                   เลือก recipe → กรอก mixed_date, bottle_type
-  ├─ แตะขวด → Inventory item detail
-  │             แสดง: recipe ที่ใช้, วันผสม, shelf life countdown
-  │             แสดง: use_count / max_rolls
-  │             [แก้ไข notes], [Mark as exhausted], [ลบ]
-  └─ Expiry logic (คำนวณ real-time ไม่เก็บใน DB):
-        status = 'expired' ถ้า mixed_date + shelf_life_days < วันนี้
-        status = 'exhausted' ถ้า user mark หรือ one-shot ที่ใช้แล้ว
+Inventory page (`/inventory`)
+ ├─ แสดง: ขวดทั้งหมด grouped by step_type หรือ status
+ │ badge: expiring soon / exhausted / near max rolls
+ ├─ [+ เพิ่มขวด] → Add manually (ถ้าไม่ได้ผ่าน Mixing Guidance)
+ │ เลือก recipe → กรอก mixed_date, bottle_type
+ ├─ แตะขวด → Inventory item detail
+ │ แสดง: recipe ที่ใช้, วันผสม, shelf life countdown
+ │ แสดง: use_count / max_rolls
+ │ [แก้ไข notes], [Mark as exhausted], [ลบ]
+ └─ Expiry logic (คำนวณ real-time ไม่เก็บใน DB):
+ status = 'expired' ถ้า mixed_date + shelf_life_days < วันนี้
+ status = 'exhausted' ถ้า user mark หรือ one-shot ที่ใช้แล้ว
 ```
 
 ---
@@ -247,42 +261,42 @@ Inventory page
 ### Flow 3B — Kit Management
 
 ```
-Inventory page → [Kit] tab
-  ├─ แสดง: kit ทั้งหมด
-  │         warning badge ถ้า item ใดใน kit expired/exhausted
-  ├─ [+ สร้าง Kit ใหม่]
-  └─ แตะ kit → Kit detail
-                [แก้ไข], [ลบ]
+Kits page (`/kits`)
+ ├─ แสดง: kit ทั้งหมด
+ │ warning badge ถ้า item ใดใน kit expired/exhausted
+ ├─ [+ สร้าง Kit ใหม่]
+ └─ แตะ kit → Kit detail
+ [แก้ไข], [ลบ]
 ```
 
 ### Flow: Create Kit
 
 ```
 [+ สร้าง Kit ใหม่]
-  → ตั้งชื่อ kit (เช่น "HP5+ Standard Set")
-  → กำหนด Slots:
-      slot_type ที่ต้องมี: developer (required), fixer (required)
-      slot_type แนะนำ: stop (warn ถ้าว่าง)
-      slot_type optional: wash_aid, wetting_agent
+ → ตั้งชื่อ kit (เช่น "HP5+ Standard Set")
+ → กำหนด Slots:
+ slot_type ที่ต้องมี: developer (required), fixer (required)
+ slot_type แนะนำ: stop (warn ถ้าว่าง)
+ slot_type optional: wash_aid, wetting_agent
 
-      ต่อแต่ละ slot:
-        dropdown เลือก Inventory Item → filter ตาม step_type ที่ตรงกัน
-        (หลาย kit ใช้ item เดียวกันได้ — เช่น fixer ร่วม)
+ ต่อแต่ละ slot:
+ dropdown เลือก Inventory Item → filter ตาม step_type ที่ตรงกัน
+ (หลาย kit ใช้ item เดียวกันได้ — เช่น fixer ร่วม)
 
-  → Kit Validation (ก่อน Save):
-      ❌ developer slot ว่าง → block save
-      ❌ fixer slot ว่าง → block save
-      ⚠️ stop slot ว่าง → warn "ถ้า fixer เป็น reusable แนะนำ chemical stop"
-      ❌ pyro developer + non-alkaline fixer → block save + explain
-      ❌ paper fixer + film session → block save
+ → Kit Validation (ก่อน Save):
+ ❌ developer slot ว่าง → block save
+ ❌ fixer slot ว่าง → block save
+ ⚠️ stop slot ว่าง → warn "ถ้า fixer เป็น reusable แนะนำ chemical stop"
+ ❌ pyro developer + non-alkaline fixer → block save + explain
+ ❌ paper fixer + film session → block save
 
-  → Save ✅
+ → Save ✅
 ```
 
 **Two-bath developer:**
 - ถ้า inventory item ที่เลือกใน developer slot มี `recipe.constraints.is_two_bath === true`
-  → auto-add developer slot ที่สองสำหรับ Bath B
-  → ทั้งสอง slot อยู่ติดกันใน order เสมอ ห้ามแทรก stop ระหว่างกัน
+ → auto-add developer slot ที่สองสำหรับ Bath B
+ → ทั้งสอง slot อยู่ติดกันใน order เสมอ ห้ามแทรก stop ระหว่างกัน
 
 ---
 
@@ -292,7 +306,7 @@ Inventory page → [Kit] tab
 ล้างฟิล์มจริง — guided timer + deduct inventory usage + สร้าง history
 
 ### Entry points
-- Bottom nav → "Develop"
+- Bottom nav → "Dev"
 - Home → kit shortcut (1-tap)
 
 ### 2 Entry Points สู่ Session
@@ -300,15 +314,15 @@ Inventory page → [Kit] tab
 **Entry point 1: จาก Kit** (แนะนำ — track inventory ครบ)
 ```
 Develop page → [เลือก Kit]
-    แสดง kits ทั้งหมด พร้อม warning ถ้า item ใด expired/exhausted
-  → แตะ Kit → ไป Session Setup
+ แสดง kits ทั้งหมด พร้อม warning ถ้า item ใด expired/exhausted
+ → แตะ Kit → ไป Session Setup
 ```
 
 **Entry point 2: จาก Community/System Recipe** (ไม่ track inventory)
 ```
 Develop page → [เลือก Recipe โดยตรง]
-    Browse community/system developer recipes
-  → แตะ recipe → ไป Session Setup (ไม่มี inventory tracking)
+ Browse system developer recipes
+ → แตะ recipe → ไป Session Setup (ไม่มี inventory tracking)
 ```
 
 ---
@@ -317,18 +331,18 @@ Develop page → [เลือก Recipe โดยตรง]
 
 ```
 Session Setup
-  ├─ Film format: 35mm / 120 / 4x5
-  ├─ จำนวน rolls (validate: push/pull ต่างกันใน rolls หลายม้วน → warn)
-  ├─ อุณหภูมิจริง (°C) — ควรวัดก่อนเริ่มเสมอ
-  ├─ Development type: N-2 / N-1 / N / N+1 / N+2
-  └─ (ถ้ามาจาก Kit) แสดง slot summary + warning ถ้า item ใดมีปัญหา
+ ├─ Film format: 35mm / 120 / 4x5
+ ├─ จำนวน rolls (validate: push/pull ต่างกันใน rolls หลายม้วน → warn)
+ ├─ อุณหภูมิจริง (°C) — ควรวัดก่อนเริ่มเสมอ
+ ├─ Development type: N-2 / N-1 / N / N+1 / N+2
+ └─ (ถ้ามาจาก Kit) แสดง slot summary + warning ถ้า item ใดมีปัญหา
 
-  → ระบบคำนวณ:
-      development time จาก temp_table × dev_type
-      ถ้า developer เป็น reusable → +time compensation
-      ถ้า agitation method เป็น rotary → × 0.85
+ → ระบบคำนวณ:
+ development time จาก temp_table × dev_type
+ ถ้า developer เป็น reusable → +time compensation
+ ถ้า agitation method เป็น rotary → × 0.85
 
-  → [เริ่ม Session]
+ → [เริ่ม Session]
 ```
 
 ---
@@ -336,25 +350,25 @@ Session Setup
 ### Flow: Active Session (Timer)
 
 ```
-  Active Timer (loop per step)
-    ├─ Countdown ใหญ่ — readable at a glance
-    ├─ Step name + progress indicator (step X of Y)
-    ├─ Step-specific warning แสดงตลอด (เช่น "Two-bath: ห้ามล้างน้ำก่อน Bath B")
-    ├─ Agitation reminder — notify ตาม agitation spec ของ recipe
-    ├─ [Pause] → dialog ก่อน back (ดู BACK_BUTTON_POLICY.md)
-    └─ หมดเวลา → notify → Step Complete
+ Active Timer (loop per step)
+ ├─ Countdown ใหญ่ — readable at a glance
+ ├─ Step name + progress indicator (step X of Y)
+ ├─ Step-specific warning แสดงตลอด (เช่น "Two-bath: ห้ามล้างน้ำก่อน Bath B")
+ ├─ Agitation reminder — notify ตาม agitation spec ของ recipe
+ ├─ [Pause] → dialog ก่อน back (ดู BACK_BUTTON_POLICY.md)
+ └─ หมดเวลา → notify → Step Complete
 
-  Step Complete
-    ├─ Transition warning (เช่น "เท Bath B ทันที — ห้ามล้างน้ำ")
-    ├─ Step ถัดไป + เวลา
-    └─ [เริ่ม step ถัดไป] / [Emergency exit]
+ Step Complete
+ ├─ Transition warning (เช่น "เท Bath B ทันที — ห้ามล้างน้ำ")
+ ├─ Step ถัดไป + เวลา
+ └─ [เริ่ม step ถัดไป] / [Emergency exit]
 
-  All Done 🎉
-    ├─ [ถ้ามาจาก Kit] → อัปเดต use_count ของ Inventory Items ทุกตัวใน slots
-    │                     (dedup ถ้า item เดียวอยู่หลาย slot)
-    ├─ บันทึก DevSession (history)
-    ├─ [ล้างฟิล์มม้วนใหม่] → กลับ Session Setup
-    └─ [กลับหน้าหลัก]
+ All Done 🎉
+ ├─ [ถ้ามาจาก Kit] → อัปเดต use_count ของ Inventory Items ทุกตัวใน slots
+ │ (dedup ถ้า item เดียวอยู่หลาย slot)
+ ├─ บันทึก DevSession (history)
+ ├─ [ล้างฟิล์มม้วนใหม่] → กลับ Session Setup
+ └─ [กลับหน้าหลัก]
 ```
 
 ---
@@ -365,14 +379,14 @@ Session Setup
 base_time = recipe.develop_timing.temp_table[temperature][dev_type]
 
 ถ้า developer bottle เป็น reusable:
-  rolls = bottle.use_count
-  compensation = rolls 1-2: ×1.0, 3-4: ×1.25, 5-6: ×1.50, 7-8: ×1.75, 9+: warn
-  adjusted_time = base_time × compensation
+ rolls = bottle.use_count
+ compensation = rolls 1-2: ×1.0, 3-4: ×1.25, 5-6: ×1.50, 7-8: ×1.75, 9+: warn
+ adjusted_time = base_time × compensation
 
 ถ้า agitation_method === 'rotary':
-  final_time = adjusted_time × 0.85
+ final_time = adjusted_time × 0.85
 else:
-  final_time = adjusted_time
+ final_time = adjusted_time
 ```
 
 ---
@@ -381,12 +395,12 @@ else:
 
 ```
 Dev tab (หน้าแรกเมื่อเปิดแอพ)
-  ├─ Kit Shortcuts (ถ้ามี kit)
-  │     แตะ kit → Session Setup พร้อม kit applied (1 tap)
-  ├─ [ถ้าไม่มี kit] → "สร้าง Kit แรกของคุณ" → My Kit tab
-  ├─ Recent Sessions (3–5 รายการล่าสุด)
-  │     tap → session detail (read-only)
-  └─ [+ เริ่ม session จาก recipe] → Entry point 2 (anonymous)
+ ├─ Kit Shortcuts (ถ้ามี kit)
+ │ แตะ kit → Session Setup พร้อม kit applied (1 tap)
+ ├─ [ถ้าไม่มี kit] → "สร้าง Kit แรกของคุณ" → My Kit tab
+ ├─ Recent Sessions (3–5 รายการล่าสุด)
+ │ tap → session detail (read-only)
+ └─ [+ เริ่ม session จาก recipe] → Entry point 2 (anonymous)
 ```
 
 ---
@@ -395,48 +409,48 @@ Dev tab (หน้าแรกเมื่อเปิดแอพ)
 
 | Key | เนื้อหา | Entity |
 |-----|---------|--------|
-| `v2-recipes` | personal recipes | `Recipe[]` |
-| `v2-inventory` | inventory items | `InventoryItem[]` |
-| `v2-kits` | kit presets | `Kit[]` |
-| `v2-sessions` | session history | `DevSession[]` |
-| `v2-settings` | app settings | settings object |
-| `v2-equipment` | equipment profile | `EquipmentProfile` |
+| `recipes` | personal recipes | `Recipe[]` |
+| `inventory` | inventory items | `InventoryItem[]` |
+| `kits` | kit presets | `Kit[]` |
+| `sessions` | session history | `DevSession[]` |
+| `settings` | app settings | settings object |
+| `equipment` | equipment profile | `EquipmentProfile` |
 
-> หมายเหตุ: prefix `v2-` ทุก key เพื่อแยกจาก V1 data (`my-kit`, `my-kit-devkits` ฯลฯ) ชัดเจน
+> หมายเหตุ: standard keys (no prefix) ทุก key เพื่อแยกจาก V1 data (`my-kit`, `my-kit-devkits` ฯลฯ) ชัดเจน
 
 ---
 
 ## Session State (Zustand — ไม่ใช่ localStorage)
 
 ```ts
-// developStore.ts (V2)
+// developStore.ts ()
 type DevelopStoreState = {
-  // Session config
-  sessionSource: SessionSource | null       // { type: 'kit', ... } | { type: 'recipes', ... }
-  filmFormat: FilmFormat | null
-  rollsCount: number
-  temperatureCelsius: number | null
-  devType: DevType                          // 'N-2' | 'N-1' | 'N' | 'N+1' | 'N+2'
+ // Session config
+ sessionSource: SessionSource | null // { type: 'kit', ... } | { type: 'recipes', ... }
+ filmFormat: FilmFormat | null
+ rollsCount: number
+ temperatureCelsius: number | null
+ devType: DevType // 'N-2' | 'N-1' | 'N' | 'N+1' | 'N+2'
 
-  // Equipment — prefill จาก user settings, override ได้ per-session (ไม่ save กลับ)
-  agitationMethod: AgitationMethod          // temporary session override
-  tankType: string | null                   // temporary session override
+ // Equipment — prefill จาก user settings, override ได้ per-session (ไม่ save กลับ)
+ agitationMethod: AgitationMethod // temporary session override
+ tankType: string | null // temporary session override
 
-  // Timer state
-  currentStepIndex: number
-  isRunning: boolean
-  isPaused: boolean
-  remainingSeconds: number
+ // Timer state
+ currentStepIndex: number
+ isRunning: boolean
+ isPaused: boolean
+ remainingSeconds: number
 
-  // Computed
-  calculatedSteps: SessionStep[]            // steps พร้อม final_duration_seconds แล้ว
+ // Computed
+ calculatedSteps: SessionStep[] // steps พร้อม final_duration_seconds แล้ว
 }
 
-// mixStore.ts (V2) — Mixing Guidance UI state
+// mixStore.ts () — Mixing Guidance UI state
 type MixStoreState = {
-  selectedRecipeIds: string[]               // recipes ที่ tick เลือก
-  mode: 'prep' | 'step_by_step' | null      // เลือกหลัง summary screen
-  currentRecipeIndex: number                // ใช้ใน step_by_step mode
+ selectedRecipeIds: string[] // recipes ที่ tick เลือก
+ mode: 'prep' | 'step_by_step' | null // เลือกหลัง summary screen
+ currentRecipeIndex: number // ใช้ใน step_by_step mode
 }
 ```
 
@@ -464,6 +478,6 @@ type MixStoreState = {
 | Two-bath slot ordering | Auto-generate โดย system เมื่อ detect `is_two_bath = true` |
 | Session entry point 2 | Anonymous session — ไม่บังคับ inventory, ไม่ update use_count |
 | Equipment profile | User settings (default) + session override temporary เท่านั้น |
-| Prep mode | Multi-select recipes → summary → เลือก Prep Mode หรือ Step-by-Step |
+| Prep mode | Prepare all chemicals first → Mix all → Add bottle to inventory |
 | Navigation | 5 tabs: Dev / Mix / Recipes / My Kit / Settings |
 | Responsive nav | Bottom bar (mobile) → Left sidebar (tablet 768px+) |

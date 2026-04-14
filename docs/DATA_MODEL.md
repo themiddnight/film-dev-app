@@ -1,563 +1,731 @@
-# Film Dev Guidance — Data Model (V1 Only)
+# Film Dev Guidance — Data Model
 
-> ⚠️ **DEPRECATED for V2** — เอกสารนี้ใช้ได้เฉพาะกับ V1 codebase เท่านั้น
-> สำหรับ V2 architecture ดูที่ **`DATA_MODEL_V2.md`** แทน
+> Version: 2.0 (complete rethink)
+> Last updated: 2026-04-13
+> Status: Planning — ยังไม่ได้ implement
 >
-> เก็บไว้เป็น reference สำหรับ V1 types ที่ยังอยู่ใน codebase
-> อย่านำ V1 types มาใช้ใน V2 โดยไม่ตรวจสอบก่อน
+> เอกสารนี้แทนที่ DATA_MODEL.md สำหรับ architecture
+> Product rationale และ UX requirements ดูที่:
+> `../Analog Photographic/film-dev-guidance-ux-requirements.md`
 
 ---
 
-## Overview
+## Overview: สิ่งที่เปลี่ยนจาก V1
 
-Recipes decouple two independent concerns:
+### V1 Recipe structure
+Recipe 1 ตัว = bundle ของ dev + stop + fix ครบในตัว มี `baths[]` และ `develop_steps[]` อยู่ใน recipe เดียวกัน
 
-1. **Mixing Guide** (`baths[]`) — How to prepare chemical solutions. Each bath describes which raw/concentrate chemicals to mix and the steps required.
-2. **Develop Session** (`develop_steps[]`) — Timer and agitation steps during actual film development. Develop steps reference baths they use, but many steps (rinse, wash, dry) have no bath.
-
-This separation is intentional: a recipe can have develop steps that don't require mixing (e.g., water rinse, final wash), and a bath can exist in the Mixing Guide without appearing in the timer steps (for convenience or future use).
-
----
-
-## ChemicalFormat Type
-
-Describes how a bath's chemicals are prepared. Each format has different field requirements:
-
-### `raw_powder`
-Raw chemicals mixed from scratch. User buys individual powders and combines them.
-
-**Requires:** `chemicals[]` (list of powders) and `mixing_steps[]` (instructions)
-**Note:** `chemicals` and `mixing_steps` are optional fields on Bath (TypeScript `?`) — but for `raw_powder` and `diy` they must be present. Omitting them on these formats is a data error.
-
-**Examples:**
-- Divided D-23 Bath A (Sodium Sulphite + Metol)
-- Divided D-23 Stop Bath (Potassium Metabisulphite)
-- D-76 (Metol + Sodium Sulphite + Hydroquinone + Borax)
+### Recipe structure
+Recipe 1 ตัว = สูตรสำหรับ **chemical step เดียว** (developer, stop, fixer, wash_aid หรือ wetting_agent) ไม่มี bundle อีกต่อไป
 
 ---
 
-### `powder_concentrate`
-A single powder packet (sacheted) dissolved in water. Common in region-specific formulations.
+## Core Entities
 
-**Requires:** `mixing_steps[]` (dilution instructions), `chemicals[]` is a single-item array
-
-**Examples:**
-- XTOL sachet (user buys sealed packet, dissolve in water)
-- Rodinal powder packets
-
----
-
-### `liquid_concentrate`
-Pre-mixed liquid that's diluted with water before use. Sold as concentrate in bottles.
-
-**Requires:** `dilution_ratio` (e.g., "1:31"), `mixing_steps[]` (dilution instructions), `chemicals[]` is a single item representing the concentrate
-**Note:** `dilution_ratio` is stored on Bath directly (not inside chemicals). See `recipe.ts` Bath type.
-
-**Examples:**
-- HC-110 (Kodak liquid concentrate, diluted 1:31 or 1:15)
-- Rodinal liquid (diluted with water)
-- ILFOSOL 3
-- Ilford Rapid Fixer
-- Ilfostop stop bath
-
----
-
-### `ready_to_use`
-Pour and use as-is. No mixing or dilution required.
-
-**Requires:** `mixing_required: false`, no `chemicals[]` or `mixing_steps[]` needed
-
-**Examples:**
-- CineStill DF96 monobath
-- Plain distilled water (for stop bath or rinse)
-- Pre-mixed stop bath or fixer solutions (rare)
-
----
-
-### `diy`
-Household chemicals or improvised formulas. Treated like `raw_powder` from a data perspective, but tagged `diy` for UI clarity.
-
-**Requires:** `chemicals[]` and `mixing_steps[]` (same as raw_powder)
-
-**Examples:**
-- Caffenol (coffee + washing soda + vitamin C)
-- Vinegar stop bath (diluted white vinegar)
-
----
-
-## Bath.role
-
-Describes the functional purpose of the bath during develop session:
-
-- **`developer`** — Develops the latent image (Divided D-23 Bath A, D-76, HC-110 working solution)
-- **`stop`** — Halts development (stop bath, acetic acid, or plain water)
-- **`fixer`** — Dissolves unexposed silver halide (hypo-based or rapid fixer)
-- **`wash_aid`** — Speeds up fixing removal (sodium thiosulfate or chelating agents) — optional step in develop_steps
-- **`wetting_agent`** — Final rinse additive to prevent water spotting (Photo-Flo, Ilford Ilfospeed) — optional step in develop_steps
-
----
-
-## mixing_required Field
-
-A **derived boolean** on Bath. NOT user-editable when building forms.
-
-- `true` if `chemical_format` is `raw_powder`, `powder_concentrate`, or `liquid_concentrate`
-- `false` if `chemical_format` is `ready_to_use`
-- `diy` → true (requires mixing)
-
-**UI Usage:** The Selection Screen filters `recipe.baths` to only show baths where `mixing_required === true`. Ready-to-use chemicals are skipped in the Mixing Guide entirely.
-
----
-
-## DevelopStep Changes
-
-### `bath_ref?: string`
-Links a DevelopStep to a Bath by `id`. Used by the "add recipe" form to indicate which chemical is used at each step.
-
-**Set for:** developer, activator, stop, fixer steps (steps that use a chemical)
-
-**Omit for:** rinse, wash, dry steps (no chemical needed)
-
-**Example:**
-```json
-{
-  "id": "bath-a-dev",
-  "type": "developer",
-  "bath_ref": "bath-a"
-}
-```
-
-### `optional?: boolean`
-Marks a step as skippable. Typically used for `wash_aid` and `wetting_agent` steps.
-
-**Example:** A recipe might include a wash_aid step, but some users may substitute it with a longer water wash instead.
-
-### `optional_note?: string`
-Text explaining how to handle skipping this step. Shown to user before session starts if the step is optional.
-
-**Example:** `"Replace with 10-minute running water wash if wash_aid is unavailable"`
-
----
-
-## Form UI Guide (for Future Developer)
-
-When building the "Add Recipe" form, follow these patterns:
-
-### Bath Creation Flow
-
-1. **User picks `chemical_format`** for the bath
-2. **Form conditionally renders fields:**
-
-   - **`raw_powder`** or **`diy`**
-     - `name` (e.g., "Bath A — Developer")
-     - `role` (dropdown: developer, stop, fixer, wash_aid, wetting_agent)
-     - `chemicals` list:
-       - For each chemical: `name`, `amount_per_liter`, `unit` (g|ml), `order` (sequence), `note` (optional)
-     - `mixing_steps` list:
-       - For each step: `instruction`, `warning` (optional)
-     - `storage` (optional): shelf_life, container, notes
-
-   - **`powder_concentrate`**
-     - `name`
-     - `role`
-     - `chemicals` (single-item input: name, amount_per_liter, unit)
-     - `mixing_steps` (dilution instructions)
-     - `storage`
-
-   - **`liquid_concentrate`**
-     - `name`
-     - `role`
-     - `dilution_ratio` (text field, e.g., "1:31")
-     - `chemicals` (single-item: concentrate name, amount_per_liter, unit)
-     - `mixing_steps` (dilution instructions, simplified)
-     - `storage`
-
-   - **`ready_to_use`**
-     - `name`
-     - `role`
-     - `storage` (optional)
-     - **Hide:** chemicals, mixing_steps, dilution_ratio
-
-3. **`mixing_required`** is auto-derived from `chemical_format` (not shown to user)
-
-### DevelopStep Creation Flow
-
-- User selects step type (developer, activator, rinse, stop, fixer, wash, dry)
-- **If step type has a chemical equivalent** (developer, stop, fixer, wash_aid, wetting_agent):
-  - Show dropdown `bath_ref`: filtered list of baths with matching `role`
-  - If step is `wash_aid` or `wetting_agent`: show `optional` checkbox + `optional_note` text field
-- **If step type is rinse/wash/dry:**
-  - Omit `bath_ref`
-  - Omit optional fields
-
----
-
-## Template Variables (Known Limitation)
-
-Mixing step instructions currently use **hardcoded template variables** like:
-- `{volume_75pct}` → 75% of target volume
-- `{sodium_sulphite}` → scaled amount of Sodium Sulphite
-- `{hc110_concentrate}` → scaled HC-110 volume
-- etc.
-
-These are resolved at **render time** in `MixChecklistPage.tsx` via the `resolveInstruction()` function.
-
-### For User-Generated Recipes
-
-When building forms that allow users to create recipes, **do not use template variables** in `mixing_steps[].instruction`. Instead:
-
-1. **Use plain text** with specific amounts (form pre-calculates based on base_volume_ml)
-2. Or implement **auto-generation** from the `chemicals[]` list (not yet built)
-
-This is a known limitation that should be addressed when the form is built.
-
----
-
-## Examples
-
-### Example 1: raw_powder — Divided D-23 Bath A
-
-```json
-{
-  "id": "bath-a",
-  "name": "Bath A — Developer",
-  "role": "developer",
-  "chemical_format": "raw_powder",
-  "mixing_required": true,
-  "chemicals": [
-    {
-      "name": "Sodium Sulphite",
-      "amount_per_liter": 100,
-      "unit": "g",
-      "order": 1,
-      "note": "Dissolve first before Metol to prevent oxidation"
-    },
-    {
-      "name": "Metol",
-      "amount_per_liter": 7.5,
-      "unit": "g",
-      "order": 2,
-      "note": "Add after Sodium Sulphite — never reverse order"
-    }
-  ],
-  "mixing_steps": [
-    {
-      "instruction": "Add {volume_75pct} ml distilled water at room temperature (~25°C)"
-    },
-    {
-      "instruction": "Add {sodium_sulphite} g Sodium Sulphite, stir until fully dissolved",
-      "warning": "Sodium Sulphite must dissolve completely before adding Metol"
-    },
-    {
-      "instruction": "Add {metol} g Metol, stir until fully dissolved"
-    },
-    {
-      "instruction": "Top up with distilled water to {target_volume} ml"
-    }
-  ],
-  "storage": {
-    "shelf_life": "6–12 months",
-    "container": "amber bottle, sealed, keep cool",
-    "notes": "Store in cool, dark place. Avoid light and heat."
-  }
-}
-```
-
-### Example 2: liquid_concentrate — HC-110
-
-```json
-{
-  "id": "hc110-working",
-  "name": "HC-110 Working Solution (Dil. B)",
-  "role": "developer",
-  "chemical_format": "liquid_concentrate",
-  "mixing_required": true,
-  "dilution_ratio": "1:31",
-  "chemicals": [
-    {
-      "name": "HC-110 Concentrate",
-      "amount_per_liter": 32,
-      "unit": "ml",
-      "order": 1,
-      "note": "Measure precisely — HC-110 is very viscous; 1–2 ml difference affects development"
-    }
-  ],
-  "mixing_steps": [
-    {
-      "instruction": "Measure {hc110_concentrate} ml HC-110 Concentrate using a syringe or graduated cylinder",
-      "warning": "HC-110 is very thick like syrup — let it drip completely, don't pour quickly"
-    },
-    {
-      "instruction": "Pour water at desired temperature into container first ({hc110_water} ml)"
-    },
-    {
-      "instruction": "Add HC-110 Concentrate to water and stir gently until combined — ready to use immediately",
-      "warning": "Use immediately — HC-110 working solution does not keep overnight"
-    }
-  ],
-  "storage": {
-    "shelf_life": "Concentrate: indefinite (unopened) · 6 months (opened, full bottle) · 2 months (opened, half-full)",
-    "container": "Original Kodak plastic bottle, tightly sealed",
-    "notes": "Store concentrate for years. Working solution must be discarded after use."
-  }
-}
-```
-
-### Example 3: ready_to_use — Water Stop
-
-```json
-{
-  "id": "water-stop",
-  "name": "Plain Water Stop",
-  "role": "stop",
-  "chemical_format": "ready_to_use",
-  "mixing_required": false,
-  "storage": {
-    "shelf_life": "N/A",
-    "container": "tap water",
-    "notes": "Use fresh water at development temperature"
-  }
-}
-```
-
----
-
-## Recipe-level Fields
-
-### `references?: string[]`
-Array of source URLs for the recipe. Displayed as domain-only links in the UI.
-
-**Example:**
-```json
-"references": [
-  "https://www.digitaltruth.com/devchart.php",
-  "https://filmdev.org/recipe/show/4850"
-]
-```
-
----
-
-## My Kit (Phase 1b+)
-
-### Overview
-
-My Kit คือ "Layer 2 — User's World" ของ app: ข้อมูลที่ user สร้างและ track เอง ต่างจาก Layer 1 (Recipe knowledge) ที่เป็น static/curated data
-
-### ChemicalBottle
+### 1. Recipe
 
 ```ts
-type ChemicalBottle = {
-  id: string                        // uuid — ไม่ใช่ index
-  developerName: string             // "Divided D-23 Bath A", "HC-110 Working Solution"
-                                    // format: "{RecipeNamePrefix} {BathShortName}"
-  role: 'developer' | 'stop' | 'fixer' | 'wash_aid' | 'wetting_agent'
-                                    // ใช้ filter slot ใน DevKit — ต้องตรงกับ Bath.role ของ recipe
-  defaultDilution?: string          // "1:25" — default แต่ override ได้ต่อ session
-  type: 'one-shot' | 'reusable'
-  mixedAt: string                   // ISO date — วันที่ผสมหรือเปิดขวด
-  shelfLifeDays?: number            // จาก recipe data ถ้ามี — ใช้คำนวณ expiry warning
-  rollsDeveloped: number            // track จาก sessions
-  maxRolls?: number                 // จาก recipe data — warn เมื่อใกล้ครบ
-  notes?: string
-  createdAt: string                 // ISO date
-  updatedAt: string                 // ISO date
+type Recipe = {
+ id: string // uuid
+ slug: string // "rodinal-1-50-hp5", สำหรับ URL
+ name: string // "Rodinal 1+50"
+ description?: string
+ step_type: RecipeStepType // ประเภท chemical step (ดูด้านล่าง)
+
+ // Film specificity (optional)
+ film_compatibility: FilmCompatibility
+
+ // Chemical details
+ chemical_format: ChemicalFormat
+ dilution?: DilutionSpec // สำหรับ liquid_concentrate
+ chemicals?: Chemical[] // สำหรับ powder_raw / diy
+ mixing_steps?: MixingStep[] // guided mixing instructions
+
+ // Development timing (developer recipes เท่านั้น)
+ base_volume_ml?: number // 1000 — สำหรับ scale สูตร
+ optimal_temp?: { min: number; max: number } // celsius
+ develop_timing?: DevelopTiming
+
+ // Agitation (developer recipes เท่านั้น)
+ agitation?: AgitationSpec
+
+ // Storage info
+ storage?: StorageInfo
+
+ // Chemistry constraints
+ constraints?: RecipeConstraints
+
+ // Authorship & visibility
+ author_id?: string // null = system recipe
+ author_type: 'system' | 'personal' | 'community'
+ visibility: 'private' | 'published'
+ status: 'draft' | 'pending_review' | 'published'
+
+ tags?: string[]
+ references?: string[] // URLs
+
+ created_at: string // ISO datetime
+ updated_at: string
 }
 ```
-
-**หมายเหตุ `developerName`:** ชื่อถูก qualified ด้วย recipe prefix เสมอ เช่น:
-- Divided D-23 → `"Divided D-23 Bath A"`, `"Divided D-23 Bath B"`
-- HC-110 → `"HC-110 Working Solution"`
-- ไม่ใช้ชื่อสั้น เช่น `"Bath A"` เพราะไม่ระบุว่าเป็นสูตรอะไร
-
-**หมายเหตุ `role`:** ต้องระบุเสมอ — ใช้เพื่อ filter ขวดให้ถูก slot ใน DevKit
-- ปัจจุบัน Mixing Guide Prompt เพิ่มขวดเฉพาะ `role: 'developer'` bath เท่านั้น
-- Phase 1c: เพิ่ม support สำหรับ stop, fixer ถ้าต้องการ
 
 ---
 
-### DevKit (Phase 1c)
-
-**ความหมาย:** DevKit คือ "preset สำหรับ session" — user เลือกล่วงหน้าว่าจะใช้ขวดไหนกับ step ไหนของ recipe
+### RecipeStepType
 
 ```ts
-type DevKit = {
-  id: string                        // uuid
-  name: string                      // ชื่อที่ user ตั้ง เช่น "D-23 + Ilfosol Stop Set"
-  recipeId: string                  // FK ไป Recipe — Kit ผูกกับ recipe 1 ตัว
-  slots: KitSlot[]                  // mapping stepId → bottleId
-  createdAt: string
-  updatedAt: string
+type RecipeStepType =
+ | 'developer'
+ | 'stop'
+ | 'fixer'
+ | 'wash_aid'
+ | 'wetting_agent'
+```
+
+---
+
+### FilmCompatibility
+
+```ts
+type FilmCompatibility = {
+ scope: 'general' | 'specific'
+ films?: string[] // ["hp5-plus", "delta-400"] ถ้า scope = 'specific'
+ iso_range?: { min: number; max: number } // optional hint
+ notes?: string // "ทดสอบแล้วได้ผลดีกับ HP5+ box speed"
+}
+
+// ตัวอย่าง:
+// general: { scope: 'general' }
+// specific: { scope: 'specific', films: ['hp5-plus'], notes: 'ทดสอบ N และ N+1' }
+```
+
+---
+
+### ChemicalFormat (ไม่เปลี่ยน)
+
+```ts
+type ChemicalFormat =
+ | 'powder_raw' // ซื้อสารแยก ชั่งเองผสมเอง — ต้องมี chemicals[] + mixing_steps[]
+ | 'powder_concentrate' // ซอง dissolve ในน้ำ — ต้องมี mixing_steps[]
+ | 'liquid_concentrate' // เจือจาง — ต้องมี dilution
+ | 'ready_to_use' // เทใช้เลย — ไม่ต้องมี mixing_steps[]
+ | 'diy' // household chemicals — ต้องมี chemicals[] + mixing_steps[]
+```
+
+---
+
+### DilutionSpec (ไม่เปลี่ยน)
+
+```ts
+type DilutionSpec =
+ | { type: 'fixed'; concentrate_parts: number; water_parts: number; label?: string }
+ | { type: 'preset'; options: DilutionOption[]; default_label?: string }
+ | { type: 'open'; suggested_ratios: DilutionOption[]; min_water_parts?: number; max_water_parts?: number }
+
+type DilutionOption = {
+ label?: string
+ concentrate_parts: number
+ water_parts: number
+ notes?: string
 }
 ```
 
-**ความสัมพันธ์ Kit → Recipe:**
-- DevKit ผูกกับ Recipe 1 ตัวเสมอ (ผ่าน `recipeId`) — เพราะ step ordering ขึ้นอยู่กับ recipe
-- Recipe กำหนด step structure — Kit เพียง map ขวดไปยัง slots ที่ recipe กำหนด
-- Kit ไม่รู้ว่า two-bath หรือ one-bath — รู้แค่ว่า step ไหนใช้ขวดอะไร ข้อมูลลำดับ (Bath A → Bath B) อยู่ใน Recipe
+---
 
-### KitSlot
-
-**ความหมาย:** Slot คือการ map ระหว่าง develop_step 1 step กับ bottle 1 ขวด
+### DevelopTiming
 
 ```ts
+// Developer recipes: timing ขึ้นอยู่กับ temp และ/หรือ push/pull
+type DevelopTiming = {
+ type: 'fixed' | 'temp_table' | 'push_pull_table' | 'combined'
+ fixed_seconds?: number
+ temp_table?: TempTable // temp_celsius → { 'N-2'?, 'N-1'?, N, 'N+1'?, 'N+2'? }
+ push_pull_table?: PushPullTable
+}
+
+type TempTable = Record<number, Partial<Record<'N-2' | 'N-1' | 'N' | 'N+1' | 'N+2', number>>>
+
+type PushPullTable = {
+ base_temp_celsius: number
+ entries: Partial<Record<'N-2' | 'N-1' | 'N' | 'N+1' | 'N+2', number>>
+}
+```
+
+---
+
+### AgitationSpec (ไม่เปลี่ยน)
+
+```ts
+type AgitationSpec =
+ | { type: 'inversion'; initial_seconds: number; interval_seconds: number; duration_seconds: number }
+ | { type: 'stand' }
+ | { type: 'semi_stand'; initial_seconds: number }
+ | { type: 'rotary'; rpm?: number }
+ | { type: 'custom'; description: string }
+```
+
+---
+
+### RecipeConstraints
+
+ข้อมูล compatibility constraints ที่ app ใช้ validate Kit ก่อน session
+
+```ts
+type RecipeConstraints = {
+ // สำหรับ developer recipes
+ required_fixer_type?: 'standard' | 'alkaline'
+ // 'alkaline' = Pyro developer (PMK Pyro, WD2D ฯลฯ) — ต้องใช้ TF-4, TF-5
+ // ถ้าไม่ระบุ = 'standard' (ใช้ได้กับ fixer ทั่วไป)
+
+ is_two_bath?: boolean
+ // true = two-bath developer — Kit ต้องมี slot ที่เรียงถูกต้อง (Bath A → Bath B ห้ามแทรก stop)
+
+ // สำหรับ fixer recipes
+ fixer_grade?: 'film' | 'paper'
+ // ส่วนใหญ่ระบุแค่ใน fixer recipes เพื่อ warn ถ้า user assign ผิด
+
+ // สำหรับ developer recipes (reusable)
+ reuse_compensation?: {
+ max_rolls?: number // จำนวน rolls สูงสุดก่อนทิ้ง
+ time_increase_per_roll?: number // % ที่เพิ่มต่อ roll (0.25 = +25%)
+ notes?: string
+ }
+
+ // Agitation time multiplier
+ agitation_time_multipliers?: {
+ inversion?: number // 1.0 (baseline)
+ rotary?: number // 0.85 (-15%)
+ stand?: number // N/A สำหรับ stand dev (fixed time อยู่แล้ว)
+ }
+
+ // Volume constraints ตาม film format
+ min_volume_ml?: {
+ '35mm_1roll'?: number
+ '35mm_2roll'?: number
+ '120_1roll'?: number
+ '4x5_1sheet'?: number
+ }
+}
+```
+
+---
+
+### StorageInfo (ไม่เปลี่ยน)
+
+```ts
+type StorageInfo = {
+ shelf_life?: string // "6 months", "indefinite"
+ container?: string // "amber glass bottle, sealed"
+ notes?: string
+}
+```
+
+---
+
+### Chemical (ไม่เปลี่ยน)
+
+```ts
+type Chemical = {
+ name: string
+ amount_per_liter: number
+ unit: 'g' | 'ml'
+ order: number // ลำดับการเติม (chemistry constraint!)
+ note?: string
+}
+```
+
+---
+
+### MixingStep (ไม่เปลี่ยน)
+
+```ts
+type MixingStep = {
+ tokens: StepToken[]
+ warning?: string
+ chemicals?: string[] // chemical names ที่เกี่ยวข้องใน step นี้
+}
+
+type StepToken =
+ | { type: 'text'; value: string }
+ | { type: 'var'; var: TemplateVar }
+
+type TemplateVar =
+ | { name: 'target_volume' }
+ | { name: 'volume_pct'; pct: number }
+ | { name: 'chemical_amount'; chemical_name: string }
+ | { name: 'temperature'; celsius: number }
+ | { name: 'dilution_concentrate' }
+ | { name: 'dilution_water' }
+```
+
+---
+
+## 2. InventoryItem
+
+```ts
+type InventoryItem = {
+ id: string // uuid
+ name: string // "Rodinal ขวดแรก" — user ตั้ง, prefill จาก recipe name
+ recipe_id: string // FK → Recipe (required เสมอ)
+ recipe_snapshot?: { // snapshot ของ recipe name ณ เวลาบันทึก
+ name: string
+ step_type: RecipeStepType
+ }
+ step_type: RecipeStepType // copy จาก recipe — ใช้ filter slot ใน Kit
+ bottle_type: 'one-shot' | 'reusable'
+
+ // Lifecycle
+ mixed_date: string // ISO date — วันที่ผสมหรือเปิดขวด
+ shelf_life_days?: number // จาก recipe storage data หรือ user กรอกเอง
+ use_count: number // จำนวน rolls ที่ใช้ไปแล้ว (เพิ่มทุก session)
+ max_rolls?: number // warn เมื่อ use_count ≥ max_rolls
+
+ // Status
+ status: 'active' | 'exhausted' | 'expired'
+ // 'exhausted' = one-shot ที่ถูกใช้แล้ว หรือ reusable ที่ user mark ว่าทิ้ง
+ // 'expired' = เลย shelf_life_days แล้ว (คำนวณอัตโนมัติ)
+
+ notes?: string
+ created_at: string
+ updated_at: string
+}
+```
+
+**หมายเหตุ:** InventoryItem link กับ Recipe เสมอ แม้ user มีสูตรจากช่องทางอื่น ก็สร้าง personal recipe ก่อนได้เลย (ใส่แค่ชื่อ + step_type + timing) แล้วค่อย add เข้า inventory
+
+---
+
+## 3. Kit
+
+```ts
+type Kit = {
+ id: string // uuid
+ name: string // "HP5+ Standard Set" — user ตั้งเอง
+ description?: string
+
+ // Slots — ordered list ของ inventory items
+ slots: KitSlot[]
+
+ // Validation warnings (คำนวณ runtime ไม่ได้เก็บ)
+ // - developer slot ว่าง → error (Kit ใช้ไม่ได้)
+ // - fixer slot ว่าง → error
+ // - stop slot ว่าง → warn (ใช้ water stop เป็น fallback ได้)
+ // - fixer เป็น paper grade → error ถ้า session สำหรับ film
+
+ created_at: string
+ updated_at: string
+}
+
 type KitSlot = {
-  stepId: string                    // FK ไป DevelopStep.id ใน recipe
-  bottleId: string | null           // FK ไป ChemicalBottle.id — null ถ้ายังไม่ได้เลือก
+ id: string // uuid
+ slot_type: KitSlotType // ประเภทของ slot
+ inventory_item_id: string | null // FK → InventoryItem — null ถ้ายังไม่เลือก
+ order: number // ลำดับ step ใน kit (0-based)
+ optional: boolean // wash_aid, wetting_agent เป็น optional
+ notes?: string // เช่น "water stop fallback"
 }
+
+type KitSlotType =
+ | 'developer'
+ | 'stop'
+ | 'fixer'
+ | 'wash_aid'
+ | 'wetting_agent'
 ```
 
-**วิธีสร้าง slots อัตโนมัติ (auto-generation):**
-1. โหลด recipe ด้วย `recipeId`
-2. Filter `recipe.develop_steps` ที่มี `bath_ref` (steps ที่ต้องใช้น้ำยา)
-3. สร้าง `KitSlot` สำหรับแต่ละ step — `bottleId: null` เริ่มต้น
-4. UI ให้ user เลือก bottle สำหรับแต่ละ slot โดย filter `bottles` ตาม `role` ที่ตรงกับ `Bath.role` ของ step นั้น
+**ข้อสำคัญเรื่อง Slot ordering:**
+- Two-bath developer: ต้องมี 2 developer slots เรียงต่อกัน (Bath A → Bath B)
+- ห้ามมี stop slot ระหว่าง developer slots ใน two-bath
+- App validate ก่อน session โดย check `recipe.constraints.is_two_bath`
 
-**ตัวอย่าง — Divided D-23 (2-bath):**
-```
-slot: stepId="bath-a-dev"  → filter bottles where role='developer'  → เลือก "Divided D-23 Bath A"
-slot: stepId="bath-b-act"  → filter bottles where role='developer'  → เลือก "Divided D-23 Bath B"
-slot: stepId="stop-bath-dev" → filter bottles where role='stop'     → เลือก "Ilfostop"
-slot: stepId="fixer-dev"   → filter bottles where role='fixer'      → เลือก "Ilford Rapid Fixer"
-```
-
-**ตัวอย่าง — HC-110 (1-bath):**
-```
-slot: stepId="hc110-dev"   → filter bottles where role='developer'  → เลือก "HC-110 Working Solution"
-slot: stepId="hc110-stop"  → filter bottles where role='stop'       → เลือก "Ilfostop"
-slot: stepId="hc110-fixer" → filter bottles where role='fixer'      → เลือก "Ilford Rapid Fixer"
-```
-
-**หมายเหตุ:** Bath B ของ Divided D-23 มี `role: 'developer'` ใน recipe (ไม่ใช่ 'activator') เพราะมันยังคงเป็นส่วนของ develop process — UI ระบุประเภทได้จาก `DevelopStep.type: 'activator'` แทน
+**ข้อสำคัญเรื่อง Shared Inventory:**
+- หลาย Kit สามารถ point ไป InventoryItem เดียวกันได้
+- เมื่อ session ใช้ Kit → use_count เพิ่มสำหรับทุก InventoryItem ที่อยู่ใน slots (dedup ถ้า item เดียวอยู่หลาย slot)
+- ถ้า InventoryItem ถูก exhaust หรือ expire → Kit ที่ชี้อยู่แสดง warning
 
 ---
 
-### KitRepository (Phase 1c extension)
-
-เพิ่ม CRUD methods สำหรับ DevKit:
+## 4. DevSession (History)
 
 ```ts
-interface KitRepository {
-  getKit(): Promise<UserKit>
-  saveBottle(bottle: ChemicalBottle): Promise<void>
-  updateBottle(id: string, updates: Partial<ChemicalBottle>): Promise<void>
-  deleteBottle(id: string): Promise<void>
-  updateRollCount(bottleId: string, rolls: number): Promise<void>
-  // Phase 1c: DevKit CRUD
-  saveDevKit(kit: DevKit): Promise<void>
-  getDevKits(recipeId?: string): Promise<DevKit[]>
-  deleteDevKit(id: string): Promise<void>
+type DevSession = {
+ id: string // uuid
+
+ // ที่มาของ session
+ source: SessionSource
+
+ // Session config
+ film_format: '35mm' | '120' | '4x5' | 'other'
+ rolls_count: number
+ temperature_celsius: number
+ dev_type: 'N-2' | 'N-1' | 'N' | 'N+1' | 'N+2'
+ agitation_method: 'inversion' | 'rotation' | 'stand' | 'rotary'
+
+ // Actual duration (อาจต่างจาก target ถ้า user pause นาน)
+ target_duration_seconds: number
+ actual_duration_seconds?: number
+
+ // Inventory changes
+ inventory_updates: InventoryUpdate[]
+
+ // Result
+ status: 'completed' | 'abandoned'
+ notes?: string
+
+ started_at: string
+ completed_at?: string
+ created_at: string
+}
+
+type SessionSource =
+ | { type: 'kit'; kit_id: string; kit_name_snapshot: string }
+ | { type: 'recipes'; recipe_ids: string[] } // dev จาก community recipes โดยตรง
+
+type InventoryUpdate = {
+ inventory_item_id: string
+ rolls_added: number // ปกติ = rolls_count ของ session
+ time_compensation_pct?: number // % ที่เพิ่ม เช่น 25 = +25% สำหรับ reusable
 }
 ```
-
-**localStorage key:** `my-kit-devkits` (แยกจาก `my-kit` เดิม เพื่อ backward compatibility)
 
 ---
 
-### EquipmentProfile
-
-เก็บ default อุปกรณ์ของ user — load ใน session setup แต่ override ได้ต่อ session
-
-```ts
-type EquipmentProfile = {
-  tankType: 'paterson' | 'stainless' | 'jobo' | 'other'
-  tankLabel?: string                // เช่น "Paterson Super System 4"
-  agitationMethod: 'inversion' | 'rotation' | 'rotary' | 'stand'
-  waterHardness: 'soft' | 'medium' | 'hard'  // กำหนดตามพื้นที่ user อยู่
-  usesPreSoak: boolean
-  stopBathType: 'chemical' | 'water'
-}
-```
-
-### UserKit (root)
-
-```ts
-type UserKit = {
-  equipment: EquipmentProfile
-  bottles: ChemicalBottle[]
-  // devKits เก็บแยกใน localStorage key: `my-kit-devkits` — ดู KitRepository
-}
-```
-
-### Storage Strategy (per phase)
-
-| Phase | Storage | Notes |
-|-------|---------|-------|
-| Phase 1b (ปัจจุบัน) | localStorage `my-kit` | Bottles + Equipment Profile ครบแล้ว |
-| Phase 1c (Kit Playlist) | localStorage `my-kit` + `my-kit-devkits` | เพิ่ม DevKit CRUD — throwaway data |
-| Phase 3 (backend) | PostgreSQL via API | Refactor เฉพาะ repository layer — component ไม่รู้เรื่อง |
-
-### Time Compensation for Reusable Developer
-
-เมื่อ user เลือก bottle ที่เป็น reusable ใน session setup:
-
-```
-rolls 1-2:   standard time
-rolls 3-4:   +25%
-rolls 5-6:   +50%
-rolls 7-8:   +75%
-rolls 9+:    warn "developer อาจหมดประสิทธิภาพ"
-```
-
-ค่าเหล่านี้เป็น general guideline — recipe บางตัวอาจ override ด้วยตัวเลขเฉพาะ
-
----
-
-## Architecture: 2-Layer Design
-
-### Layer 1 — Knowledge (static/curated)
-- Recipes, timing tables, chemical data, agitation specs
-- Phase 1: TypeScript static files
-- Phase 2+: Database (seeded), read via API
-
-### Layer 2 — User's World (dynamic/personal)
-- My Kit (equipment + bottles), session history, settings
-- Phase 1-2: localStorage (throwaway)
-- Phase 3: Database tied to user account
-
-### Repository Pattern
-
-Service layer ใช้ Repository interface เพื่อให้ swap implementation ได้โดยไม่แตะ component:
+## 5. Repository Interfaces
 
 ```ts
 interface RecipeRepository {
-  getAll(): Promise<Recipe[]>
-  getById(id: string): Promise<Recipe | null>
+ getAll(filter?: RecipeFilter): Promise<Recipe[]>
+ getById(id: string): Promise<Recipe | null>
+ getByStepType(type: RecipeStepType): Promise<Recipe[]>
+ save(recipe: Recipe): Promise<void>
+ delete(id: string): Promise<void>
+}
+
+type RecipeFilter = {
+ step_type?: RecipeStepType
+ author_type?: 'system' | 'personal' | 'community'
+ visibility?: 'private' | 'published'
+ film?: string // filter ด้วย film name
+ search?: string // full-text search
+}
+
+interface InventoryRepository {
+ getAll(filter?: InventoryFilter): Promise<InventoryItem[]>
+ getById(id: string): Promise<InventoryItem | null>
+ getByStepType(type: RecipeStepType): Promise<InventoryItem[]>
+ save(item: InventoryItem): Promise<void>
+ updateUseCount(id: string, rolls_to_add: number): Promise<void>
+ updateStatus(id: string, status: InventoryItem['status']): Promise<void>
+ delete(id: string): Promise<void>
+}
+
+type InventoryFilter = {
+ step_type?: RecipeStepType
+ status?: InventoryItem['status']
+ bottle_type?: 'one-shot' | 'reusable'
 }
 
 interface KitRepository {
-  getKit(): Promise<UserKit>
-  saveBottle(bottle: ChemicalBottle): Promise<void>
-  updateBottle(id: string, updates: Partial<ChemicalBottle>): Promise<void>
-  deleteBottle(id: string): Promise<void>
-  updateRollCount(bottleId: string, rolls: number): Promise<void>
-  // Phase 1c additions:
-  saveDevKit(kit: DevKit): Promise<void>
-  getDevKits(recipeId?: string): Promise<DevKit[]>
-  deleteDevKit(id: string): Promise<void>
+ getAll(): Promise<Kit[]>
+ getById(id: string): Promise<Kit | null>
+ save(kit: Kit): Promise<void>
+ delete(id: string): Promise<void>
 }
 
-// Phase 2 implementations
-class LocalRecipeRepository implements RecipeRepository { /* reads static data */ }
-class LocalKitRepository implements KitRepository { /* reads/writes localStorage */ }
-
-// Phase 3 implementations (swap in, no component changes)
-class ApiRecipeRepository implements RecipeRepository { /* calls API */ }
-class ApiKitRepository implements KitRepository { /* calls API */ }
+interface SessionRepository {
+ getAll(): Promise<DevSession[]>
+ getById(id: string): Promise<DevSession | null>
+ save(session: DevSession): Promise<void>
+ getRecentSessions(limit: number): Promise<DevSession[]>
+}
 ```
 
-### Data Shape Rules (all phases)
-1. ทุก entity ใช้ `id: string` (UUID format) ไม่ใช่ array index
-2. ทุก entity มี `createdAt` และ `updatedAt` (ISO string)
-3. ข้อมูล recipe เก็บเป็น metric เสมอ — แปลงหน่วยเฉพาะตอน display
-4. ไม่ต้อง migrate data เมื่อ Phase 2 → Phase 3 เพราะ app จะยังไม่ production จนกว่า infra พร้อม
+---
+
+## 6. Kit Validation Rules (Runtime)
+
+ก่อน user เริ่ม Dev Session จาก Kit ระบบต้อง validate:
+
+```ts
+type KitValidationResult = {
+ valid: boolean
+ errors: KitValidationError[] // ต้องแก้ก่อนเริ่ม
+ warnings: KitValidationWarning[] // แสดง warn แต่เริ่มได้
+}
+
+// Errors (block session)
+type KitValidationError =
+ | { type: 'missing_developer'; message: string }
+ | { type: 'missing_fixer'; message: string }
+ | { type: 'item_exhausted'; item_id: string; slot_type: KitSlotType }
+ | { type: 'item_expired'; item_id: string; slot_type: KitSlotType }
+ | { type: 'pyro_wrong_fixer'; developer_id: string; fixer_id: string }
+ // developer ต้องการ alkaline fixer แต่ fixer ที่เลือกเป็น standard
+ | { type: 'paper_fixer_on_film'; fixer_id: string }
+
+// Warnings (แสดงแต่ไม่ block)
+type KitValidationWarning =
+ | { type: 'missing_stop'; message: 'water stop จะใช้เป็น fallback' }
+ | { type: 'missing_wash_aid'; message: string }
+ | { type: 'developer_near_max_rolls'; item_id: string; rolls_remaining: number }
+ | { type: 'reusable_fixer_no_chemical_stop'; message: string }
+ // fixer เป็น reusable แต่ stop slot ว่าง หรือใช้ water stop
+ // warn เพราะ developer carry-over จะทำให้ fixer หมดเร็ว
+```
+
+---
+
+## 7. Storage Strategy (per phase)
+
+| Entity | Phase 1 ( rebuild) | Phase 2 (Backend) |
+|--------|---------------------|-------------------|
+| Recipes (system) | TypeScript static files | PostgreSQL + seed |
+| Recipes (personal) | localStorage `recipes` | PostgreSQL (tied to user) |
+| InventoryItems | localStorage `inventory` | PostgreSQL |
+| Kits | localStorage `kits` | PostgreSQL |
+| Sessions | localStorage `sessions` | PostgreSQL |
+| User | N/A (no auth) | Google OAuth + users table |
+
+**localStorage key naming:** ใช้ standard keys (no prefix) สำหรับ current codebase
+
+---
+
+## 8. Architecture: 2-Layer Design (ไม่เปลี่ยน)
+
+### Layer 1 — Knowledge (static/curated)
+- Recipes (system), film catalog
+- Phase 1: TypeScript static files
+- Phase 2+: PostgreSQL, seeded
+
+### Layer 2 — User's World (dynamic/personal)
+- InventoryItems, Kits, Sessions, personal Recipes
+- Phase 1: localStorage (throwaway)
+- Phase 3: PostgreSQL tied to user account
+
+### Repository Pattern
+
+Repository interface เดิม ยังคงใช้ pattern เดิม:
+- `LocalRecipeRepository` → TypeScript static files
+- `LocalInventoryRepository` → localStorage `inventory`
+- `LocalKitRepository` → localStorage `kits`
+- `LocalSessionRepository` → localStorage `sessions`
+
+Phase 2: swap เป็น `ApiRecipeRepository`, `ApiInventoryRepository` ฯลฯ โดยไม่แตะ component
+
+---
+
+## 9. ตัวอย่าง Data
+
+### Recipe: Rodinal 1+50 (general)
+```json
+{
+ "id": "rodinal-1-50-general",
+ "slug": "rodinal-1-50-general",
+ "name": "Rodinal 1+50",
+ "step_type": "developer",
+ "film_compatibility": { "scope": "general" },
+ "chemical_format": "liquid_concentrate",
+ "dilution": {
+ "type": "open",
+ "suggested_ratios": [
+ { "concentrate_parts": 1, "water_parts": 25, "notes": "high acutance, more grain" },
+ { "concentrate_parts": 1, "water_parts": 50, "notes": "balanced, most common" },
+ { "concentrate_parts": 1, "water_parts": 100, "notes": "stand development" }
+ ]
+ },
+ "develop_timing": {
+ "type": "temp_table",
+ "temp_table": {
+ "18": { "N-1": 9, "N": 12, "N+1": 16 },
+ "20": { "N-1": 8, "N": 11, "N+1": 14 },
+ "24": { "N-1": 6, "N": 8, "N+1": 11 }
+ }
+ },
+ "agitation": { "type": "inversion", "initial_seconds": 30, "interval_seconds": 60, "duration_seconds": 10 },
+ "storage": { "shelf_life": "years (opened)", "container": "original bottle", "notes": "เปิดแล้วเก็บได้หลายปี" },
+ "author_type": "system",
+ "visibility": "published",
+ "status": "published"
+}
+```
+
+### Recipe: Ilfostop (stop bath)
+```json
+{
+ "id": "ilfostop",
+ "slug": "ilfostop",
+ "name": "Ilfostop",
+ "step_type": "stop",
+ "film_compatibility": { "scope": "general" },
+ "chemical_format": "liquid_concentrate",
+ "dilution": {
+ "type": "fixed",
+ "concentrate_parts": 1,
+ "water_parts": 19,
+ "label": "1+19"
+ },
+ "storage": { "shelf_life": "reuse until indicator changes color" },
+ "author_type": "system",
+ "visibility": "published",
+ "status": "published"
+}
+```
+
+### InventoryItem ที่ได้จาก Mixing Guidance
+```json
+{
+ "id": "inv-001",
+ "name": "Rodinal ขวดแรก",
+ "recipe_id": "rodinal-1-50-general",
+ "recipe_snapshot": { "name": "Rodinal 1+50", "step_type": "developer" },
+ "step_type": "developer",
+ "bottle_type": "reusable",
+ "mixed_date": "2026-04-10",
+ "shelf_life_days": null,
+ "use_count": 3,
+ "max_rolls": null,
+ "status": "active",
+ "notes": "ขวด 500ml ซื้อจาก Fotofile"
+}
+```
+
+### Kit: HP5+ Standard Set
+```json
+{
+ "id": "kit-001",
+ "name": "HP5+ Standard Set",
+ "slots": [
+ {
+ "id": "slot-001",
+ "slot_type": "developer",
+ "inventory_item_id": "inv-001",
+ "order": 0,
+ "optional": false
+ },
+ {
+ "id": "slot-002",
+ "slot_type": "stop",
+ "inventory_item_id": "inv-002",
+ "order": 1,
+ "optional": false
+ },
+ {
+ "id": "slot-003",
+ "slot_type": "fixer",
+ "inventory_item_id": "inv-003",
+ "order": 2,
+ "optional": false
+ },
+ {
+ "id": "slot-004",
+ "slot_type": "wetting_agent",
+ "inventory_item_id": "inv-004",
+ "order": 3,
+ "optional": true
+ }
+ ]
+}
+```
+
+---
+
+## 10. Architecture Decisions (ตัดสินใจแล้ว)
+
+### Film catalog — string array
+`film_compatibility.films[]` ใช้ string array อิสระ (ไม่ normalize เป็น entity)
+
+```ts
+// ตัวอย่าง
+film_compatibility: {
+ scope: 'specific',
+ films: ['ilford-hp5-plus', 'ilford-delta-400'],
+ notes: 'ทดสอบกับ HP5+ box speed'
+}
+```
+
+**Convention:** ใช้ kebab-case lowercase slug ("%brand%-name") เพื่อลด fuzzy mismatch
+system recipes ใช้ slug มาตรฐาน — personal recipes กรอกอิสระ
+
+---
+
+### Two-bath slot ordering — auto-generate
+เมื่อ user เลือก recipe ที่มี `constraints.is_two_bath = true` ระบบ auto-generate slots ให้:
+- Slot 0: `developer` (Bath A) — required
+- Slot 1: `developer` (Bath B) — required
+- Slot 2: `fixer` — required
+- ไม่มี stop slot (ห้ามแทรกระหว่าง Bath A → Bath B ตาม chemistry constraint)
+
+User ไม่ต้อง drag หรือจัดเรียงเอง Kit validation จะ reject ถ้า stop ถูกแทรก
+
+---
+
+### Session Entry Point 2 — anonymous session (ไม่บังคับ inventory)
+User สามารถรัน Dev Session จาก recipe โดยตรง โดยไม่ต้องมี InventoryItem:
+
+```ts
+type SessionSource =
+ | { type: 'kit'; kit_id: string; kit_name_snapshot: string }
+ | { type: 'recipes'; recipe_ids: string[] } // anonymous — ไม่ track inventory
+ | { type: 'anonymous'; recipe_ids: string[] } // alias เดียวกัน, ไม่ update use_count
+```
+
+เมื่อ session มาจาก `type: 'recipes'` หรือ `type: 'anonymous'`:
+- ไม่มี `inventory_updates` (array ว่าง)
+- use_count ไม่ถูกเพิ่ม
+- ยังบันทึก session history ได้
+
+---
+
+### Equipment Profile — user settings + session override (temporary)
+EquipmentProfile เก็บที่ user settings (Phase 3 — tied to user account):
+
+```ts
+type EquipmentProfile = {
+ tank_type?: string // "Paterson System 4", "Jobo 1520"
+ agitation_method?: 'inversion' | 'rotary' | 'stand'
+ water_hardness?: 'soft' | 'medium' | 'hard'
+ default_temperature_celsius?: number
+}
+```
+
+**Session-level override:** user แก้ได้ต่อ session แต่ไม่ save กลับไป profile — เป็น temporary เท่านั้น
+
+Phase 1 ( rebuild): Equipment settings อยู่ใน Settings tab, เก็บ localStorage `equipment`
+Phase 3: ย้ายไป user profile ใน PostgreSQL
+
+---
+
+### Prep Mode — multi-select + mode choice
+ใน Mix tab เมื่อ user เข้าหน้า Mixing Guidance:
+
+1. **Select recipes** — multiple choice checkboxes (developer, stop, fixer, etc.)
+2. **Summary screen** — แสดง recipes ที่เลือก พร้อม total ingredients
+3. **Mode choice:**
+ - **Prep Mode** — แสดงทุก recipe พร้อมกัน (overview ก่อน mix)
+ - **Step-by-Step Mode** — walk through ทีละ recipe ตามลำดับ
+
+ไม่มี entity เพิ่มใน data model สำหรับ prep mode — เป็น UI state ล้วนๆ (Zustand session state)
+
+---
+
+### Navigation Structure — 5 Tabs
+App ใช้ bottom navigation bar (mobile) / left sidebar (tablet+):
+
+| Tab | เนื้อหา |
+|-----|--------|
+| **Dev** | Film Dev session — entry point หลัก |
+| **Mix** | Mixing Guidance — multi-select recipe + guided flow |
+| **Recipes** | Browse / Create / Favorites / Community recipes |
+| **My Kit** | Inventory + Kits (sub-nav ภายใน tab) |
+| **Settings** | Equipment profile, preferences |
+
+Responsive: bottom nav บน mobile, sidebar บน tablet (768px+) และ desktop
 
 ---
 
 ## Related Files
 
-- **Type definitions:** `frontend/src/types/recipe.ts`
-- **Recipe data:** `frontend/src/data/divided-d23.ts`, `frontend/src/data/hc110.ts`, `frontend/src/data/d76.ts`
-- **Mixing UI:** `frontend/src/pages/mixing/SelectionScreenPage.tsx`, `ShoppingListPage.tsx`, `MixChecklistPage.tsx`
-- **Mixing state:** `frontend/src/store/mixingStore.ts`
-- **Development variables overview:** `FLOW.md` → "Development Variables" section
-- **Architecture decisions:** `ARCHITECTURE.md` (planned)
+- ** UX/Product requirements:** `../Analog Photographic/film-dev-guidance-ux-requirements.md`
+- **Chemistry domain knowledge:** `../Analog Photographic/film-chemistry-research.md`
+- **V1 Data Model (reference):** `DATA_MODEL.md` (deprecated สำหรับ )
+- **V1 Recipe Schema (reference):** `RECIPE_SCHEMA.md` (ยังใช้ได้บางส่วน — DilutionSpec, AgitationSpec, MixingStep ยังเหมือนเดิม)

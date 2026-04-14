@@ -1,147 +1,63 @@
-// store/mixingStore.ts
-// State สำหรับ Mixing Guide (Flow 1)
-
 import { create } from 'zustand'
-import type { Recipe, Bath } from '../types/recipe'
-import type { MixingMode } from '../types/settings'
+import { persist } from 'zustand/middleware'
+
+type MixingMode = 'prep' | 'step-by-step'
 
 type MixingStore = {
-  // Config (จาก Selection Screen)
-  recipe: Recipe | null
-  selectedBathIds: string[]
+  selectedRecipeIds: string[]
   targetVolumeMl: number
+  selectedDilutions: Record<string, { concentrate_parts: number; water_parts: number; label?: string }>
   mode: MixingMode
+  currentRecipeIndex: number
+  checkedMap: Record<string, boolean>
 
-  // Progress
-  currentBathIndex: number       // index ใน selectedBathIds
-  prepChecked: Record<string, boolean>   // bathId-chemicalIndex → checked
-  mixChecked: Record<string, boolean>    // bathId-stepIndex → checked
-  phase: 'prep' | 'mix'                  // SBS mode phase for current bath
-
-  // Actions
-  setRecipe: (r: Recipe) => void
-  setSelectedBaths: (ids: string[]) => void
+  setSelectedRecipeIds: (ids: string[]) => void
+  setMode: (mode: MixingMode) => void
   setTargetVolume: (ml: number) => void
-  setMode: (m: MixingMode) => void
-
-  togglePrepItem: (key: string) => void
-  toggleMixItem: (key: string) => void
-  advanceToMix: () => void           // SBS: PREP done → MIX
-  advanceToBath: () => void          // move to next bath
-  reset: () => void
-
-  // Computed helpers
-  selectedBaths: () => Bath[]
-  currentBath: () => Bath | null
-  scaledAmount: (amountPerLiter: number) => number  // scale to targetVolumeMl
-  prepComplete: () => boolean
-  mixComplete: () => boolean
+  setDilution: (recipeId: string, dilution: { concentrate_parts: number; water_parts: number; label?: string }) => void
+  setCurrentRecipeIndex: (index: number) => void
+  toggleChecked: (key: string) => void
+  resetProgress: () => void
+  resetAll: () => void
 }
 
-// Pure helpers — explicit deps so React Compiler can track them correctly.
-export function computePrepComplete(
-  baths: Bath[],
-  prepChecked: Record<string, boolean>,
-): boolean {
-  return baths.every((bath) =>
-    (bath.chemicals ?? []).every((_, i) => prepChecked[`${bath.id}-${i}`])
-  )
-}
-
-export function computeMixComplete(
-  bath: Bath | null,
-  mixChecked: Record<string, boolean>,
-): boolean {
-  if (!bath) return false
-  return (bath.mixing_steps ?? []).every((_, i) => mixChecked[`${bath.id}-step-${i}`])
-}
-
-export const useMixingStore = create<MixingStore>()((set, get) => ({
-  recipe: null,
-  selectedBathIds: [],
-  targetVolumeMl: 1000,
-  mode: 'prep',
-
-  currentBathIndex: 0,
-  prepChecked: {},
-  mixChecked: {},
-  phase: 'prep',
-
-  setRecipe: (recipe) =>
-    set({
-      recipe,
-      selectedBathIds: recipe.baths.filter((b) => b.mixing_required).map((b) => b.id),
-      currentBathIndex: 0,
-      prepChecked: {},
-      mixChecked: {},
-      phase: 'prep',
-    }),
-
-  setSelectedBaths: (ids) => set({ selectedBathIds: ids }),
-  setTargetVolume: (ml) => set({ targetVolumeMl: ml }),
-  setMode: (mode) => set({ mode }),
-
-  togglePrepItem: (key) =>
-    set((s) => ({ prepChecked: { ...s.prepChecked, [key]: !s.prepChecked[key] } })),
-
-  toggleMixItem: (key) =>
-    set((s) => ({ mixChecked: { ...s.mixChecked, [key]: !s.mixChecked[key] } })),
-
-  advanceToMix: () => set({ phase: 'mix' }),
-
-  advanceToBath: () => {
-    const { currentBathIndex, selectedBathIds } = get()
-    const next = currentBathIndex + 1
-    if (next >= selectedBathIds.length) {
-      // Done — caller handles navigation to "Done" screen
-      set({ currentBathIndex: next, phase: 'prep' })
-    } else {
-      set({ currentBathIndex: next, phase: 'prep' })
-    }
-  },
-
-  reset: () =>
-    set({
-      recipe: null,
-      selectedBathIds: [],
+export const useMixingStore = create<MixingStore>()(
+  persist(
+    (set) => ({
+      selectedRecipeIds: [],
       targetVolumeMl: 1000,
-      currentBathIndex: 0,
-      prepChecked: {},
-      mixChecked: {},
-      phase: 'prep',
+      selectedDilutions: {},
+      mode: 'prep',
+      currentRecipeIndex: 0,
+      checkedMap: {},
+
+      setSelectedRecipeIds: (ids) => set({ selectedRecipeIds: ids }),
+      setMode: (mode) => set({ mode }),
+      setTargetVolume: (ml) => set({ targetVolumeMl: ml }),
+      setDilution: (recipeId, dilution) =>
+        set((prev) => ({
+          selectedDilutions: {
+            ...prev.selectedDilutions,
+            [recipeId]: dilution,
+          },
+        })),
+      setCurrentRecipeIndex: (index) => set({ currentRecipeIndex: index }),
+      toggleChecked: (key) => set((prev) => ({ checkedMap: { ...prev.checkedMap, [key]: !prev.checkedMap[key] } })),
+
+      resetProgress: () => set({ currentRecipeIndex: 0, checkedMap: {} }),
+
+      resetAll: () =>
+        set({
+          selectedRecipeIds: [],
+          targetVolumeMl: 1000,
+          selectedDilutions: {},
+          mode: 'prep',
+          currentRecipeIndex: 0,
+          checkedMap: {},
+        }),
     }),
-
-  selectedBaths: () => {
-    const { recipe, selectedBathIds } = get()
-    if (!recipe) return []
-    return selectedBathIds
-      .map((id) => recipe.baths.find((b) => b.id === id))
-      .filter(Boolean) as Bath[]
-  },
-
-  currentBath: () => {
-    const { currentBathIndex, selectedBathIds, recipe } = get()
-    if (!recipe) return null
-    const id = selectedBathIds[currentBathIndex]
-    return recipe.baths.find((b) => b.id === id) ?? null
-  },
-
-  scaledAmount: (amountPerLiter) => {
-    const { targetVolumeMl } = get()
-    return Math.round((amountPerLiter * targetVolumeMl) / 1000 * 100) / 100
-  },
-
-  prepComplete: () => {
-    const { recipe, selectedBathIds, mode, currentBathIndex, prepChecked } = get()
-    if (!recipe) return false
-    const baths = mode === 'prep'
-      ? selectedBathIds.map((id) => recipe.baths.find((b) => b.id === id)!).filter(Boolean)
-      : [recipe.baths.find((b) => b.id === selectedBathIds[currentBathIndex])!].filter(Boolean)
-    return computePrepComplete(baths, prepChecked)
-  },
-
-  mixComplete: () => {
-    const { currentBath, mixChecked } = get()
-    return computeMixComplete(currentBath(), mixChecked)
-  },
-}))
+    {
+      name: 'mixing',
+    },
+  ),
+)
