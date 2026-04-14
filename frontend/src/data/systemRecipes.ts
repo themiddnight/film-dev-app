@@ -261,6 +261,11 @@ export const systemRecipes: Recipe[] = [
         chemicals: [
           { name: 'Sodium Metaborate (Kodalk)', amount_per_liter: 12, unit: 'g', order: 1 },
         ],
+        n_variations: {
+          'N-1': { chemicals: [{ name: 'Sodium Metaborate (Kodalk)', amount_per_liter: 9, unit: 'g', order: 1 }] },
+          'N':   { chemicals: [{ name: 'Sodium Metaborate (Kodalk)', amount_per_liter: 12, unit: 'g', order: 1 }] },
+          'N+1': { chemicals: [{ name: 'Sodium Metaborate (Kodalk)', amount_per_liter: 15, unit: 'g', order: 1 }] },
+        },
         storage: {
           shelf_life: '1-2 months',
           container: 'Dark glass bottle, tightly sealed',
@@ -293,12 +298,12 @@ export const systemRecipes: Recipe[] = [
           interval_seconds: 60,
           duration_seconds: 5,
         },
-        warnings: ['Lighter agitation: 5s at start, then 5s per minute.', 'Agitate less for more compensation effect on highlights.'],
+        warnings: ['Lighter agitation: 5s at start, then 5s per minute.', 'Follow recommended agitation pattern for consistent results — compensation is controlled by chemistry, not agitation amount.'],
       },
     ],
     optimal_temp: { min: 20, max: 22 },
     constraints: {
-      required_fixer_type: 'alkaline',
+      required_fixer_type: 'standard',
       is_two_bath: true,
       reuse_compensation: {
         max_rolls: 15,

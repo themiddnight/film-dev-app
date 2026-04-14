@@ -1,4 +1,6 @@
-import type { RecipeStepType } from './recipe'
+import type { PushPull, RecipeStepType } from './recipe'
+
+export type DeveloperBathRole = 'single' | 'bath_a' | 'bath_b'
 
 export type InventoryItem = {
   id: string
@@ -9,6 +11,8 @@ export type InventoryItem = {
     step_type: RecipeStepType
   }
   step_type: RecipeStepType
+  developer_bath_role?: DeveloperBathRole
+  n_level?: PushPull
   bottle_type: 'one-shot' | 'reusable'
   mixed_date: string
   shelf_life_days?: number

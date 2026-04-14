@@ -8,9 +8,12 @@ export type KitSlotType =
   | 'wash_aid'
   | 'wetting_agent'
 
+export type KitDeveloperSlotRole = 'bath_a' | 'bath_b'
+
 export type KitSlot = {
   id: string
   slot_type: KitSlotType
+  developer_slot_role?: KitDeveloperSlotRole
   inventory_item_id: string | null
   order: number
   optional: boolean

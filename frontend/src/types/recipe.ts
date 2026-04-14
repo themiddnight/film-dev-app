@@ -1,18 +1,18 @@
 // types/recipe.ts
-// Data model ตาม FLOW.md — current  model (with optional compatibility fields)
+// Data model per FLOW.md — current model (with optional compatibility fields)
 
 export type Chemical = {
   name: string
-  amount_per_liter: number  // ปริมาณต่อ 1 ลิตร (metric เสมอ — แปลงตอน display)
+  amount_per_liter: number  // amount per 1 litre (always metric — convert at display time)
   unit: 'g' | 'ml'
-  order: number             // ลำดับการใส่ — ห้ามเปลี่ยน
-  note?: string             // เช่น "ใส่หลัง Sodium Sulphite เสมอ"
+  order: number             // addition order — do not change
+  note?: string             // e.g. "add after Sodium Sulphite"
 }
 
 export type MixingStep = {
-  instruction: string       // "เทน้ำ {volume_75pct} ml ลงในภาชนะ" (template variables)
-  warning?: string          // แสดงโดดเด่น
-  chemicals?: Chemical[]    // สารที่ใส่ใน step นี้
+  instruction: string       // "Pour {volume_75pct} ml of water into the vessel" (template variables)
+  warning?: string          // displayed prominently
+  chemicals?: Chemical[]    // chemicals added in this step
 }
 
 export type ChemicalFormat =
@@ -54,6 +54,11 @@ export type DilutionSpec =
     }
 
 export type PushPull = 'N-2' | 'N-1' | 'N' | 'N+1' | 'N+2'
+
+export type BathNVariation = {
+  chemicals?: Chemical[]
+  mixing_steps?: MixingStep[]
+}
 
 export type DevelopTiming = {
   type: 'fixed' | 'temp_table' | 'push_pull_table' | 'combined'
@@ -121,12 +126,13 @@ export type Bath = {
     container: string
     notes?: string
   }
+  n_variations?: Partial<Record<PushPull, BathNVariation>>
 }
 
 export type AgitationSchedule = {
-  initial_seconds: number   // เขย่า N วินาทีแรก
-  interval_seconds: number  // จากนั้นทุก N วินาที
-  duration_seconds: number  // ครั้งละ N วินาที
+  initial_seconds: number   // agitate for the first N seconds
+  interval_seconds: number  // then every N seconds
+  duration_seconds: number  // for N seconds each time
 }
 
 export type TempTableEntry = {
@@ -140,19 +146,19 @@ export type TempTableEntry = {
 export type DevelopStep = {
   id: string
   name: string
-  // type = functional role ของ step ในกระบวนการล้างฟิล์ม (ไม่ใช่ chemistry)
-  // ความต่างจาก Bath.role:
-  //   Bath.role = "สารนี้คืออะไร" (chemistry perspective)
-  //   DevelopStep.type = "step นี้ทำหน้าที่อะไร" (process perspective)
-  // ตัวอย่าง Divided D-23 Bath B (Borax):
-  //   Bath.role = 'developer' (เป็น developer solution)
-  //   DevelopStep.type = 'activator' (ทำหน้าที่ activate Bath A ไม่ใช่ develop โดยตรง)
+  // type = functional role of the step in the film development process (not chemistry)
+  // difference from Bath.role:
+  //   Bath.role = "what is this chemical" (chemistry perspective)
+  //   DevelopStep.type = "what does this step do" (process perspective)
+  // example — Divided D-23 Bath B (Borax):
+  //   Bath.role = 'developer' (it is a developer solution)
+  //   DevelopStep.type = 'activator' (its role is to activate Bath A, not develop directly)
   type: 'developer' | 'activator' | 'rinse' | 'stop' | 'fixer' | 'wash' | 'dry'
-  duration_seconds: number | 'variable'  // "variable" = user กรอกเอง
+  duration_seconds: number | 'variable'  // "variable" = user enters manually
   duration_override_key?: string          // localStorage key
   agitation?: AgitationSchedule
-  warnings?: string[]         // แสดงตลอด step
-  transition_warning?: string // แสดงตอน Step Complete ก่อนไป step ถัดไป
+  warnings?: string[]         // shown throughout the step
+  transition_warning?: string // shown at Step Complete before moving to the next step
   temp_table?: Record<number, TempTableEntry>  // temp_celsius → durations
   bath_ref?: string           // links to Bath.id — used by steps that require chemicals
   optional?: boolean          // marks step as skippable (wash_aid, wetting_agent)
