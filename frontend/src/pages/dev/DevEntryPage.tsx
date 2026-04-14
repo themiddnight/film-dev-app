@@ -48,7 +48,7 @@ export default function DevEntryPage() {
 
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
         <section>
-          <h2 className="text-xs uppercase tracking-wide text-sub mb-2">Entry point 1: from kit</h2>
+          <h2 className="text-xs uppercase tracking-wide text-sub mb-2">Get started from your kit</h2>
           <div className="space-y-2">
             {kitCards.length === 0 && (
               <p className="text-sm text-sub">No kit yet. Create one in Kits .</p>
@@ -57,7 +57,7 @@ export default function DevEntryPage() {
             {kitCards.map((kit) => (
               <button
                 key={kit.id}
-                className="w-full text-left p-3 rounded-lg bg-base-200 hover:bg-base-300 transition-colors"
+                className="w-full text-left p-3 rounded-lg bg-base-300 hover:bg-base-300 transition-colors"
                 onClick={() => chooseKit(kit.id)}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -76,7 +76,7 @@ export default function DevEntryPage() {
         </section>
 
         <section>
-          <h2 className="text-xs uppercase tracking-wide text-sub mb-2">Entry point 2: recipe direct (anonymous)</h2>
+          <h2 className="text-xs uppercase tracking-wide text-sub mb-2">Get started from recipe direct (anonymous)</h2>
           <div className="space-y-2">
             {recipes.map((recipe) => (
               <button

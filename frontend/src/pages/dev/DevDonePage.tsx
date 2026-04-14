@@ -18,6 +18,7 @@ export default function DevDonePage() {
     agitation_method,
     target_duration_seconds,
     started_at,
+    selected_bath_b_item_id,
     completeTimerSession,
     toSessionSource,
     resetRuntime,
@@ -50,14 +51,29 @@ export default function DevDonePage() {
         sourceNameRef.current = kit?.name ?? 'Kit'
         const ids = [...new Set(kit?.slots.map((s) => s.inventory_item_id).filter((id): id is string => !!id) ?? [])]
         const allItems = await inventoryRepo.getAll()
-        usedInventory = allItems.filter((item) => ids.includes(item.id))
+        let kitItems = allItems.filter((item) => ids.includes(item.id))
+
+        // For two-bath: replace the kit's Bath B item with the one selected at dev time
+        const kitBathBItem = kitItems.find((item) => item.developer_bath_role === 'bath_b')
+        if (kitBathBItem && selected_bath_b_item_id && selected_bath_b_item_id !== kitBathBItem.id) {
+          kitItems = kitItems.filter((item) => item.developer_bath_role !== 'bath_b')
+          const selectedBathB = allItems.find((item) => item.id === selected_bath_b_item_id)
+          if (selectedBathB) kitItems = [...kitItems, selectedBathB]
+        } else if (!kitBathBItem && selected_bath_b_item_id) {
+          // Kit had no Bath B slot (e.g., empty slot) — add the selected one
+          const selectedBathB = allItems.find((item) => item.id === selected_bath_b_item_id)
+          if (selectedBathB) kitItems = [...kitItems, selectedBathB]
+        }
+
+        usedInventory = kitItems
 
         // Dedup and update use count for all inventory used in the kit.
         for (const item of usedInventory) {
           await inventoryRepo.updateUseCount(item.id, rolls_count)
         }
 
-        const developer = usedInventory.find((item) => item.step_type === 'developer')
+        const developer = usedInventory.find((item) => item.step_type === 'developer' && item.developer_bath_role === 'bath_a')
+          ?? usedInventory.find((item) => item.step_type === 'developer')
         if (developer) {
           const recipe = await recipeRepo.getById(developer.recipe_id)
           recipeName = recipe?.name ?? recipeName
@@ -107,9 +123,11 @@ export default function DevDonePage() {
     temperature_celsius,
     dev_type,
     agitation_method,
+    selected_bath_b_item_id,
     completeTimerSession,
     toSessionSource,
     save,
+    navigate,
   ])
 
   return (

@@ -10,6 +10,16 @@ import { applyAdjustments, getRecipeTimingSeconds } from '../../utils/dev'
 import type { DevType } from '../../types/settings'
 import { useEquipmentStore } from '../../store/equipmentStore'
 
+function getBaseSeconds(recipe: Recipe, temperatureCelsius: number, devType: DevType): number {
+  if (recipe.constraints?.is_two_bath && (recipe.develop_steps?.length ?? 0) > 0) {
+    return (recipe.develop_steps ?? [])
+      .filter((step) => step.type === 'developer' || step.type === 'activator')
+      .reduce((sum, step) => sum + (typeof step.duration_seconds === 'number' ? step.duration_seconds : 0), 0)
+  }
+
+  return getRecipeTimingSeconds(recipe, temperatureCelsius, devType)
+}
+
 const DEV_TYPES: DevType[] = ['N-2', 'N-1', 'N', 'N+1', 'N+2']
 
 export default function DevSetupPage() {
@@ -17,6 +27,8 @@ export default function DevSetupPage() {
   const [developerRecipe, setDeveloperRecipe] = useState<Recipe | null>(null)
   const [kit, setKit] = useState<Kit | null>(null)
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([])
+  const [bathBOptions, setBathBOptions] = useState<InventoryItem[]>([])
+  const [selectedBathBItemId, setSelectedBathBItemId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   const {
@@ -27,6 +39,7 @@ export default function DevSetupPage() {
     dev_type,
     agitation_method,
     setConfig,
+    setSelectedBathBItemId: storeSetBathB,
     startTimerSession,
   } = useDevSessionStore()
   const { equipment } = useEquipmentStore()
@@ -51,12 +64,15 @@ export default function DevSetupPage() {
     async function load() {
       setLoading(true)
       try {
+        let resolvedRecipe: Recipe | null = null
+
         if (resolvedSource.type === 'recipe') {
           const recipe = await recipeRepo.getById(resolvedSource.recipeId)
           if (!cancelled) {
             setDeveloperRecipe(recipe)
             setKit(null)
             setInventoryItems([])
+            resolvedRecipe = recipe
           }
         } else {
           const k = await kitRepo.getById(resolvedSource.kitId)
@@ -68,13 +84,40 @@ export default function DevSetupPage() {
 
           const kitItemIds = [...new Set(k.slots.map((s) => s.inventory_item_id).filter((id): id is string => !!id))]
           const selectedItems = allItems.filter((item) => kitItemIds.includes(item.id))
-          const developerItem = selectedItems.find((item) => item.step_type === 'developer')
+          const developerItem = selectedItems.find((item) => item.step_type === 'developer' && item.developer_bath_role === 'bath_a')
+            ?? selectedItems.find((item) => item.step_type === 'developer')
           const recipe = developerItem ? await recipeRepo.getById(developerItem.recipe_id) : null
 
           if (!cancelled) {
             setKit(k)
             setInventoryItems(selectedItems)
             setDeveloperRecipe(recipe)
+            resolvedRecipe = recipe
+          }
+        }
+
+        // Load Bath B options for two-bath recipes
+        if (!cancelled && resolvedRecipe?.constraints?.is_two_bath) {
+          const allItems = await inventoryRepo.getAll()
+          const options = allItems.filter(
+            (item) =>
+              item.recipe_id === resolvedRecipe!.id &&
+              item.developer_bath_role === 'bath_b' &&
+              item.status === 'active',
+          )
+          if (!cancelled) {
+            setBathBOptions(options)
+            // Pre-select: kit's Bath B slot item if available, else first option
+            const kitBathBId = resolvedSource.type === 'kit'
+              ? (() => {
+                  const k2 = options.find((item) => {
+                    // find which kit slot has this item, prefer bath_b role
+                    return item.developer_bath_role === 'bath_b'
+                  })
+                  return k2?.id ?? null
+                })()
+              : null
+            setSelectedBathBItemId(kitBathBId ?? options[0]?.id ?? null)
           }
         }
       } finally {
@@ -86,13 +129,17 @@ export default function DevSetupPage() {
     return () => {
       cancelled = true
     }
-  }, [source?.type, source && 'kitId' in source ? source.kitId : '', source && 'recipeId' in source ? source.recipeId : ''])
+  }, [navigate, source])
 
-  const developerInventory = useMemo(() => inventoryItems.find((item) => item.step_type === 'developer'), [inventoryItems])
+  const developerInventory = useMemo(
+    () => inventoryItems.find((item) => item.step_type === 'developer' && item.developer_bath_role === 'bath_a')
+      ?? inventoryItems.find((item) => item.step_type === 'developer'),
+    [inventoryItems],
+  )
 
   const baseSeconds = useMemo(() => {
     if (!developerRecipe) return 0
-    return getRecipeTimingSeconds(developerRecipe, temperature_celsius, dev_type)
+    return getBaseSeconds(developerRecipe, temperature_celsius, dev_type)
   }, [developerRecipe, temperature_celsius, dev_type])
 
   const adjusted = useMemo(() => {
@@ -106,7 +153,10 @@ export default function DevSetupPage() {
     return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
   }
 
+  const isTwoBath = !!(developerRecipe?.constraints?.is_two_bath)
+
   function start() {
+    storeSetBathB(isTwoBath ? (selectedBathBItemId ?? null) : null)
     startTimerSession(adjusted.seconds)
     navigate('/dev/timer')
   }
@@ -115,7 +165,7 @@ export default function DevSetupPage() {
     <div className="flex flex-col h-full">
       <Navbar title="Session Setup" onBack={() => navigate('/dev')} />
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-28 space-y-4">
         {loading && <p className="text-sm text-sub">Loading setup...</p>}
 
         {!loading && !developerRecipe && (
@@ -177,19 +227,42 @@ export default function DevSetupPage() {
                 />
               </div>
 
+              {!isTwoBath && (
+                <div>
+                  <label className="text-xs text-sub block mb-1">Dev type</label>
+                  <select
+                    className="select select-bordered w-full"
+                    value={dev_type}
+                    onChange={(e) => setConfig({ dev_type: e.target.value as DevType })}
+                  >
+                    {DEV_TYPES.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {isTwoBath && (
               <div>
-                <label className="text-xs text-sub block mb-1">Dev type</label>
+                <label className="text-xs text-sub block mb-1">Bath B — N level</label>
                 <select
                   className="select select-bordered w-full"
-                  value={dev_type}
-                  onChange={(e) => setConfig({ dev_type: e.target.value as DevType })}
+                  value={selectedBathBItemId ?? ''}
+                  onChange={(e) => setSelectedBathBItemId(e.target.value || null)}
                 >
-                  {DEV_TYPES.map((type) => (
-                    <option key={type} value={type}>{type}</option>
+                  <option value="">— select Bath B —</option>
+                  {bathBOptions.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.n_level ?? 'N'} — {item.name} (used {item.use_count})
+                    </option>
                   ))}
                 </select>
+                {bathBOptions.length === 0 && (
+                  <p className="text-xs text-error mt-1">No Bath B in inventory — mix one first.</p>
+                )}
               </div>
-            </div>
+            )}
 
             <div>
               <label className="text-xs text-sub block mb-1">Agitation</label>
@@ -243,12 +316,24 @@ export default function DevSetupPage() {
               </div>
             </div>
 
-            <button className="btn btn-primary w-full" onClick={start} disabled={adjusted.seconds <= 0}>
-              Start timer
-            </button>
           </>
         )}
       </div>
+
+      {developerRecipe && (
+        <div
+          className="sticky bottom-0 z-20 border-t border-base-300 bg-base-100/95 px-4 pt-3 backdrop-blur"
+          style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+        >
+          <button
+            className="btn btn-primary w-full"
+            onClick={start}
+            disabled={adjusted.seconds <= 0 || (isTwoBath && !selectedBathBItemId)}
+          >
+            Start timer
+          </button>
+        </div>
+      )}
     </div>
   )
 }
