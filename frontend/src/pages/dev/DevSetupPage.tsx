@@ -65,6 +65,7 @@ export default function DevSetupPage() {
       setLoading(true)
       try {
         let resolvedRecipe: Recipe | null = null
+        let resolvedKit: Kit | null = null
 
         if (resolvedSource.type === 'recipe') {
           const recipe = await recipeRepo.getById(resolvedSource.recipeId)
@@ -93,6 +94,7 @@ export default function DevSetupPage() {
             setInventoryItems(selectedItems)
             setDeveloperRecipe(recipe)
             resolvedRecipe = recipe
+            resolvedKit = k
           }
         }
 
@@ -110,11 +112,8 @@ export default function DevSetupPage() {
             // Pre-select: kit's Bath B slot item if available, else first option
             const kitBathBId = resolvedSource.type === 'kit'
               ? (() => {
-                  const k2 = options.find((item) => {
-                    // find which kit slot has this item, prefer bath_b role
-                    return item.developer_bath_role === 'bath_b'
-                  })
-                  return k2?.id ?? null
+                  const kitBathBSlot = resolvedKit?.slots.find((s) => s.developer_slot_role === 'bath_b')
+                  return kitBathBSlot?.inventory_item_id ?? null
                 })()
               : null
             setSelectedBathBItemId(kitBathBId ?? options[0]?.id ?? null)
@@ -154,6 +153,12 @@ export default function DevSetupPage() {
   }
 
   const isTwoBath = !!(developerRecipe?.constraints?.is_two_bath)
+
+  useEffect(() => {
+    if (isTwoBath && dev_type !== 'N') {
+      setConfig({ dev_type: 'N' })
+    }
+  }, [isTwoBath, dev_type, setConfig])
 
   function start() {
     storeSetBathB(isTwoBath ? (selectedBathBItemId ?? null) : null)

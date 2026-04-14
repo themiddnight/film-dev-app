@@ -103,9 +103,7 @@ export default function DevTimerPage() {
 
             twoBathSteps.forEach((step, index) => {
               const isLast = index === twoBathSteps.length - 1
-              const durationSeconds = index === 0
-                ? Math.round(adjustedTotal * step.seconds / baseTotal)
-                : adjustedTotal - built.reduce((sum, it) => sum + it.durationSeconds, 0)
+              const durationSeconds = Math.round(adjustedTotal * step.seconds / baseTotal)
 
               built.push({
                 id: `${recipe.id}-${index}`,
