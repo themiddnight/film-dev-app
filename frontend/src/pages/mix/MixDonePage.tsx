@@ -4,16 +4,21 @@ import Navbar from '../../components/Navbar'
 import { useRecipes } from '../../hooks/useRecipes'
 import { useMixingStore } from '../../store/mixingStore'
 import { useInventory } from '../../hooks/useInventory'
+import { isTwoBathRecipe } from '../../utils/twoBath'
 
 export default function MixDonePage() {
   const navigate = useNavigate()
-  const { selectedRecipeIds, resetAll } = useMixingStore()
+  const { selectedRecipeIds, twoBathSelections, twoBathNLevels, resetAll } = useMixingStore()
   const { recipes } = useRecipes({})
   const { save } = useInventory()
   const [saving, setSaving] = useState(false)
   const [saveMap, setSaveMap] = useState<Record<string, boolean>>({})
 
   const selected = useMemo(() => recipes.filter((recipe) => selectedRecipeIds.includes(recipe.id)), [recipes, selectedRecipeIds])
+  const partialTwoBath = useMemo(
+    () => selected.filter((recipe) => isTwoBathRecipe(recipe) && (twoBathSelections[recipe.id] ?? 'both') !== 'both'),
+    [selected, twoBathSelections],
+  )
 
   function shouldSave(recipeId: string): boolean {
     if (saveMap[recipeId] === undefined) return true
@@ -28,6 +33,59 @@ export default function MixDonePage() {
       for (const recipe of selected) {
         if (!shouldSave(recipe.id)) continue
 
+        const selection = twoBathSelections[recipe.id] ?? 'both'
+        const isTwoBath = isTwoBathRecipe(recipe)
+
+        if (isTwoBath && (selection === 'bath_a' || selection === 'both')) {
+          await save({
+            id: crypto.randomUUID(),
+            name: `${recipe.name} - Bath A`,
+            recipe_id: recipe.id,
+            recipe_snapshot: {
+              name: recipe.name,
+              step_type: recipe.step_type ?? 'developer',
+            },
+            step_type: recipe.step_type ?? 'developer',
+            developer_bath_role: 'bath_a',
+            bottle_type: 'reusable',
+            mixed_date: now.slice(0, 10),
+            shelf_life_days: undefined,
+            use_count: 0,
+            max_rolls: recipe.constraints?.reuse_compensation?.max_rolls,
+            status: 'active',
+            created_at: now,
+            updated_at: now,
+          })
+        }
+
+        if (isTwoBath && (selection === 'bath_b' || selection === 'both')) {
+          const nLevel = twoBathNLevels[recipe.id]
+          await save({
+            id: crypto.randomUUID(),
+            name: `${recipe.name} - Bath B${nLevel ? ` (${nLevel})` : ''}`,
+            recipe_id: recipe.id,
+            recipe_snapshot: {
+              name: recipe.name,
+              step_type: recipe.step_type ?? 'developer',
+            },
+            step_type: recipe.step_type ?? 'developer',
+            developer_bath_role: 'bath_b',
+            n_level: nLevel,
+            bottle_type: 'reusable',
+            mixed_date: now.slice(0, 10),
+            shelf_life_days: undefined,
+            use_count: 0,
+            max_rolls: recipe.constraints?.reuse_compensation?.max_rolls,
+            status: 'active',
+            created_at: now,
+            updated_at: now,
+          })
+        }
+
+        if (isTwoBath) {
+          continue
+        }
+
         await save({
           id: crypto.randomUUID(),
           name: recipe.name,
@@ -37,6 +95,7 @@ export default function MixDonePage() {
             step_type: recipe.step_type ?? 'developer',
           },
           step_type: recipe.step_type ?? 'developer',
+          developer_bath_role: recipe.step_type === 'developer' ? 'single' : undefined,
           bottle_type: 'reusable',
           mixed_date: now.slice(0, 10),
           shelf_life_days: undefined,
@@ -80,9 +139,20 @@ export default function MixDonePage() {
             <span>
               <span className="block font-semibold text-sm">{recipe.name}</span>
               <span className="text-xs text-sub">Save as inventory item</span>
+              {isTwoBathRecipe(recipe) && (twoBathSelections[recipe.id] ?? 'both') !== 'both' && (
+                <span className="block text-xs text-warning mt-1">
+                  Only {(twoBathSelections[recipe.id] ?? 'both').replace('_', ' ').toUpperCase()} will be saved. Two-bath kits require both Bath A and Bath B.
+                </span>
+              )}
             </span>
           </label>
         ))}
+
+        {partialTwoBath.length > 0 && (
+          <div className="alert alert-warning py-2 text-sm">
+            Some two-bath recipes were mixed partially. You can still save now, but create both baths before building a two-bath kit.
+          </div>
+        )}
       </div>
 
       <div className="p-4 border-t border-base-300 space-y-2">

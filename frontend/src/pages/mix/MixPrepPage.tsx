@@ -3,18 +3,23 @@ import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import { useRecipes } from '../../hooks/useRecipes'
 import { useMixingStore } from '../../store/mixingStore'
+import { formatScaledChemicalText } from '../../utils/mixInstruction'
+import { getChemicalsForSelection, isTwoBathRecipe } from '../../utils/twoBath'
 
 export default function MixPrepPage() {
   const navigate = useNavigate()
-  const { selectedRecipeIds, checkedMap, toggleChecked } = useMixingStore()
+  const { selectedRecipeIds, checkedMap, toggleChecked, twoBathSelections, twoBathNLevels, targetVolumeMl } = useMixingStore()
   const { recipes } = useRecipes({})
 
   const selected = useMemo(() => recipes.filter((recipe) => selectedRecipeIds.includes(recipe.id)), [recipes, selectedRecipeIds])
 
   // Count total chemicals to prepare
   const totalChemicals = useMemo(() => {
-    return selected.reduce((sum, recipe) => sum + (recipe.chemicals?.length ?? 0), 0)
-  }, [selected])
+    return selected.reduce((sum, recipe) => {
+      const selection = twoBathSelections[recipe.id] ?? 'both'
+      return sum + getChemicalsForSelection(recipe, selection, twoBathNLevels[recipe.id]).length
+    }, 0)
+  }, [selected, twoBathSelections, twoBathNLevels])
 
   const checkedCount = useMemo(() => Object.values(checkedMap).filter(Boolean).length, [checkedMap])
   const chemicalsPrepared = totalChemicals > 0 && checkedCount >= totalChemicals
@@ -30,6 +35,7 @@ export default function MixPrepPage() {
               <span className="font-semibold">Prepare all chemicals</span> from every recipe
             </p>
             <p className="text-xs text-sub mt-1">Check off each ingredient as you measure and prepare it</p>
+            <p className="text-xs text-sub mt-1">Target volume: {targetVolumeMl} ml</p>
             <p className="text-sm mt-2">
               <span className="font-semibold">{checkedCount}/{totalChemicals}</span> ingredients prepared
             </p>
@@ -41,11 +47,21 @@ export default function MixPrepPage() {
             <div className="card-body p-4">
               <p className="font-semibold text-sm">{recipe.name}</p>
               <p className="text-xs text-sub capitalize">{recipe.step_type ?? '-'}</p>
+              {isTwoBathRecipe(recipe) && (
+                <p className="text-xs text-sub">Mix target: {(twoBathSelections[recipe.id] ?? 'both').replace('_', ' ').toUpperCase()}</p>
+              )}
 
-              {(recipe.chemicals ?? []).length > 0 ? (
+              {(() => {
+                const selection = twoBathSelections[recipe.id] ?? 'both'
+                const chemicals = getChemicalsForSelection(recipe, selection, twoBathNLevels[recipe.id])
+                return chemicals.length > 0
+              })() ? (
                 <div className="mt-3 pt-3 border-t border-base-300 space-y-2">
-                  {(recipe.chemicals ?? []).map((chem) => {
-                    const key = `${recipe.id}-chem-${chem.name}`
+                  {(() => {
+                    const selection = twoBathSelections[recipe.id] ?? 'both'
+                    const chemicals = getChemicalsForSelection(recipe, selection, twoBathNLevels[recipe.id])
+                    return chemicals.map((chem, index) => {
+                    const key = `${recipe.id}-chem-${chem.name}-${index}`
                     return (
                       <label key={key} className="flex items-start gap-2">
                         <input
@@ -55,11 +71,12 @@ export default function MixPrepPage() {
                           onChange={() => toggleChecked(key)}
                         />
                         <span className="text-sm">
-                          {chem.name}: {chem.amount_per_liter} {chem.unit}/L
+                          {chem.name}: {formatScaledChemicalText(chem.amount_per_liter, chem.unit, targetVolumeMl)}
                         </span>
                       </label>
                     )
-                  })}
+                    })
+                  })()}
                 </div>
               ) : (
                 <p className="text-xs text-sub mt-2">No chemicals to prepare</p>

@@ -3,10 +3,22 @@ import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import { useRecipes } from '../../hooks/useRecipes'
 import { useMixingStore } from '../../store/mixingStore'
+import { formatMixInstruction } from '../../utils/mixInstruction'
+import { getMixingStepsForSelection, isTwoBathRecipe } from '../../utils/twoBath'
 
 export default function MixStepByStepPage() {
   const navigate = useNavigate()
-  const { selectedRecipeIds, currentRecipeIndex, setCurrentRecipeIndex, checkedMap, toggleChecked } = useMixingStore()
+  const {
+    selectedRecipeIds,
+    currentRecipeIndex,
+    setCurrentRecipeIndex,
+    checkedMap,
+    toggleChecked,
+    twoBathSelections,
+    twoBathNLevels,
+    targetVolumeMl,
+    selectedDilutions,
+  } = useMixingStore()
   const { recipes } = useRecipes({})
 
   const selected = useMemo(() => recipes.filter((recipe) => selectedRecipeIds.includes(recipe.id)), [recipes, selectedRecipeIds])
@@ -14,10 +26,11 @@ export default function MixStepByStepPage() {
 
   const completeCurrent = useMemo(() => {
     if (!current) return false
-    const steps = current.mixing_steps ?? []
+    const selection = twoBathSelections[current.id] ?? 'both'
+    const steps = getMixingStepsForSelection(current, selection)
     if (steps.length === 0) return true
     return steps.every((_, index) => checkedMap[`${current.id}-sbs-${index}`])
-  }, [current, checkedMap])
+  }, [current, checkedMap, twoBathSelections])
 
   function next() {
     if (!current) return
@@ -50,10 +63,13 @@ export default function MixStepByStepPage() {
           <div className="card-body p-4">
             <p className="font-semibold text-sm">{current.name}</p>
             <p className="text-xs text-sub capitalize">{current.step_type ?? '-'}</p>
+            {isTwoBathRecipe(current) && (
+              <p className="text-xs text-sub mt-1">Mix target: {(twoBathSelections[current.id] ?? 'both').replace('_', ' ').toUpperCase()}</p>
+            )}
           </div>
         </div>
 
-        {(current.mixing_steps ?? []).map((step, index) => {
+        {getMixingStepsForSelection(current, twoBathSelections[current.id] ?? 'both').map((step, index) => {
           const key = `${current.id}-sbs-${index}`
           return (
             <label key={key} className="flex items-start gap-2 p-3 rounded-lg bg-base-200">
@@ -63,7 +79,16 @@ export default function MixStepByStepPage() {
                 checked={!!checkedMap[key]}
                 onChange={() => toggleChecked(key)}
               />
-              <span className="text-sm">{step.instruction}</span>
+              <span className="text-sm">
+                {formatMixInstruction(
+                  step.instruction,
+                  current,
+                  twoBathSelections[current.id] ?? 'both',
+                  targetVolumeMl,
+                  selectedDilutions[current.id],
+                  twoBathNLevels[current.id],
+                )}
+              </span>
             </label>
           )
         })}

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import { useRecipes } from '../../hooks/useRecipes'
 import { useMixingStore } from '../../store/mixingStore'
+import { getBathBNOptions, isTwoBathRecipe } from '../../utils/twoBath'
+import type { PushPull } from '../../types/recipe'
 
 export default function MixSummaryPage() {
   const navigate = useNavigate()
@@ -13,7 +15,11 @@ export default function MixSummaryPage() {
     targetVolumeMl,
     setTargetVolume,
     selectedDilutions,
+    twoBathSelections,
+    twoBathNLevels,
     setDilution,
+    setTwoBathSelection,
+    setTwoBathNLevel,
     resetProgress,
   } = useMixingStore()
   const { recipes } = useRecipes({})
@@ -54,6 +60,45 @@ export default function MixSummaryPage() {
             <div key={recipe.id} className="p-3 rounded-lg bg-base-200">
               <p className="font-semibold text-sm">{recipe.name}</p>
               <p className="text-xs text-sub capitalize">{recipe.step_type ?? '-'}</p>
+
+              {isTwoBathRecipe(recipe) && (
+                <div className="mt-2">
+                  <p className="text-xs text-sub mb-1">2-bath mix target</p>
+                  <select
+                    className="select select-bordered select-sm w-full"
+                    value={twoBathSelections[recipe.id] ?? 'both'}
+                    onChange={(e) => {
+                      setTwoBathSelection(recipe.id, e.target.value as 'both' | 'bath_a' | 'bath_b')
+                    }}
+                  >
+                    <option value="both">Mix both baths (A + B)</option>
+                    <option value="bath_a">Mix Bath A only</option>
+                    <option value="bath_b">Mix Bath B only</option>
+                  </select>
+                </div>
+              )}
+
+              {(() => {
+                if (!isTwoBathRecipe(recipe)) return null
+                const selection = twoBathSelections[recipe.id] ?? 'both'
+                if (selection === 'bath_a') return null
+                const nOptions = getBathBNOptions(recipe)
+                if (nOptions.length === 0) return null
+                return (
+                  <div className="mt-2">
+                    <p className="text-xs text-sub mb-1">Bath B — N level</p>
+                    <select
+                      className="select select-bordered select-sm w-full"
+                      value={twoBathNLevels[recipe.id] ?? 'N'}
+                      onChange={(e) => setTwoBathNLevel(recipe.id, e.target.value as PushPull)}
+                    >
+                      {nOptions.map((level) => (
+                        <option key={level} value={level}>{level}</option>
+                      ))}
+                    </select>
+                  </div>
+                )
+              })()}
 
               {recipe.dilution && (
                 <div className="mt-2">

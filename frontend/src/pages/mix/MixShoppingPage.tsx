@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import { useRecipes } from '../../hooks/useRecipes'
 import { useMixingStore } from '../../store/mixingStore'
+import { getChemicalsForSelection, isTwoBathRecipe } from '../../utils/twoBath'
 
 function scaled(amountPerLiter: number, targetMl: number): number {
   return Math.round((amountPerLiter * targetMl) / 1000 * 100) / 100
@@ -10,7 +11,7 @@ function scaled(amountPerLiter: number, targetMl: number): number {
 
 export default function MixShoppingPage() {
   const navigate = useNavigate()
-  const { selectedRecipeIds, targetVolumeMl, selectedDilutions } = useMixingStore()
+  const { selectedRecipeIds, targetVolumeMl, selectedDilutions, twoBathSelections, twoBathNLevels } = useMixingStore()
   const { recipes } = useRecipes({})
 
   const selected = useMemo(() => recipes.filter((recipe) => selectedRecipeIds.includes(recipe.id)), [recipes, selectedRecipeIds])
@@ -32,6 +33,9 @@ export default function MixShoppingPage() {
               <div className="card-body p-4">
                 <p className="font-semibold text-sm">{recipe.name}</p>
                 <p className="text-xs text-sub capitalize">{recipe.step_type ?? '-'}</p>
+                {isTwoBathRecipe(recipe) && (
+                  <p className="text-xs text-sub mt-1">Mix target: {(twoBathSelections[recipe.id] ?? 'both').replace('_', ' ').toUpperCase()}</p>
+                )}
 
                 {dilution && (
                   <p className="text-xs mt-1">
@@ -40,13 +44,19 @@ export default function MixShoppingPage() {
                   </p>
                 )}
 
-                {(recipe.chemicals ?? []).length > 0 && (
+                {(() => {
+                  const selection = twoBathSelections[recipe.id] ?? 'both'
+                  return getChemicalsForSelection(recipe, selection, twoBathNLevels[recipe.id]).length > 0
+                })() && (
                   <div className="mt-2 space-y-1">
-                    {(recipe.chemicals ?? []).map((chem) => (
-                      <p key={`${recipe.id}-${chem.name}`} className="text-xs">
-                        {chem.name}: {scaled(chem.amount_per_liter, targetVolumeMl)} {chem.unit}
-                      </p>
-                    ))}
+                    {(() => {
+                      const selection = twoBathSelections[recipe.id] ?? 'both'
+                      return getChemicalsForSelection(recipe, selection, twoBathNLevels[recipe.id]).map((chem, index) => (
+                        <p key={`${recipe.id}-${chem.name}-${index}`} className="text-xs">
+                          {chem.name}: {scaled(chem.amount_per_liter, targetVolumeMl)} {chem.unit}
+                        </p>
+                      ))
+                    })()}
                   </div>
                 )}
               </div>
