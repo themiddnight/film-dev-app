@@ -187,7 +187,8 @@ type RecipeConstraints = {
  // สำหรับ developer recipes (reusable)
  reuse_compensation?: {
  max_rolls?: number // จำนวน rolls สูงสุดก่อนทิ้ง
- time_increase_per_roll?: number // % ที่เพิ่มต่อ roll (0.25 = +25%)
+ time_increase_per_roll?: number // linear per-roll increase (0.25 = +25% ต่อ 1 roll, 3 rolls = +75%)
+ // IMPORTANT: คำนวณแบบตรงตัวตามจำนวน roll (ไม่ใช้ bucket/step)
  notes?: string
  }
 

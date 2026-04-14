@@ -37,7 +37,7 @@ export default function DevSetupPage() {
     setConfig({ agitation_method: equipment.agitation_method })
     setSessionTankType(equipment.tank_type)
     setSessionWaterHardness(equipment.water_hardness)
-  }, [equipment.agitation_method])
+  }, [equipment.agitation_method, equipment.tank_type, equipment.water_hardness, setConfig])
 
   useEffect(() => {
     if (!source) {

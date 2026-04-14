@@ -113,8 +113,8 @@ Bath {
 
  reuse_compensation?: {
  max_rolls?: number // จำนวน roll สูงสุดก่อนทิ้ง (เช่น 4)
- time_increase_per_roll?: number // สัดส่วนที่เพิ่มต่อ roll (0.25 = +25%)
- notes?: string // "ใช้ได้ 4 rolls, เพิ่ม 25% ต่อ roll"
+ time_increase_per_roll?: number // สัดส่วนที่เพิ่มแบบ linear ต่อ roll (0.25 = +25% ต่อ 1 roll)
+ notes?: string // "ใช้ได้ 4 rolls, linear +25% ต่อ roll (ไม่ใช้ bucket)"
  }
 }
 
@@ -537,8 +537,8 @@ Recipe ที่ reusable developer ควรมี compensation guideline:
 // Bath เพิ่ม optional field นี้
 reuse_compensation?: {
  max_rolls?: number // จำนวน roll สูงสุดก่อนทิ้ง
- time_increase_per_roll?: number // % ที่เพิ่มต่อ roll เช่น 0.25 = +25%
- notes?: string // "ใช้ได้ 4 rolls, เพิ่ม 25% ต่อ roll"
+ time_increase_per_roll?: number // % ที่เพิ่มแบบ linear ต่อ roll เช่น 0.25 = +25% ต่อ 1 roll
+ notes?: string // "ใช้ได้ 4 rolls, linear +25% ต่อ roll (ไม่ใช้ bucket)"
 }
 ```
 

@@ -47,7 +47,7 @@
 | คำ | ความหมาย |
 |----|----------|
 | **Apply Kit** | โหลด inventory items จาก Kit preset เข้า session |
-| **Time Compensation** | เพิ่มเวลา develop เมื่อขวด developer เป็น reusable — +25%/roll |
+| **Time Compensation** | เพิ่มเวลา develop ตาม `time_increase_per_roll` แบบ linear ตามจำนวน roll ที่ใช้ไปแล้ว (ไม่ใช้ bucket) |
 | **Kit Validation** | ตรวจ kit ก่อนเริ่ม session: developer+fixer required, stop recommended |
 
 ---

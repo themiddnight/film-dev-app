@@ -16,7 +16,6 @@ export type MixingStep = {
 }
 
 export type ChemicalFormat =
-  | 'raw_powder'
   | 'powder_raw'
   | 'powder_concentrate'
   | 'liquid_concentrate'

@@ -98,7 +98,19 @@ export default function DevDonePage() {
     }
 
     void finalize()
-  }, [source, started_at, target_duration_seconds, rolls_count, film_format, temperature_celsius, dev_type, agitation_method])
+  }, [
+    source,
+    started_at,
+    target_duration_seconds,
+    rolls_count,
+    film_format,
+    temperature_celsius,
+    dev_type,
+    agitation_method,
+    completeTimerSession,
+    toSessionSource,
+    save,
+  ])
 
   return (
     <div className="flex flex-col h-full">
