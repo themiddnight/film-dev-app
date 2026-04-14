@@ -9,49 +9,49 @@
 /* DARK THEME — Deep Red / Darkroom palette */
 :root[data-theme=dark],
 [data-theme=dark] {
-  --color-primary:           oklch(52% 0.220 22);    /* แดงอิฐสด */
-  --color-primary-content:   oklch(97% 0.010 22);    /* ขาวอุ่นบน primary */
-  --color-secondary:         oklch(44% 0.155 18);    /* แดงเข้มอมน้ำตาล */
+  --color-primary:           oklch(52% 0.220 22);    /* vivid brick red */
+  --color-primary-content:   oklch(97% 0.010 22);    /* warm white on primary */
+  --color-secondary:         oklch(44% 0.155 18);    /* deep brownish red */
   --color-secondary-content: oklch(95% 0.010 22);
-  --color-accent:            oklch(72% 0.150 65);    /* ทอง/อำพัน — contrast กับแดง */
-  --color-accent-content:    oklch(20% 0.040 40);    /* ดำอุ่นบน accent */
+  --color-accent:            oklch(72% 0.150 65);    /* gold/amber — contrast against red */
+  --color-accent-content:    oklch(20% 0.040 40);    /* warm black on accent */
   --color-neutral:           oklch(32% 0.010 22);    /* warm dark grey */
   --color-neutral-content:   oklch(92% 0.006 22);
-  --color-base-100:          oklch(20% 0.008 22);    /* dark grey อุ่นเล็กน้อย */
+  --color-base-100:          oklch(20% 0.008 22);    /* slightly warm dark grey */
   --color-base-200:          oklch(26% 0.010 22);    /* card surface */
   --color-base-300:          oklch(32% 0.010 22);    /* border / divider */
-  --color-base-content:      oklch(90% 0.008 22);    /* text หลัก */
+  --color-base-content:      oklch(90% 0.008 22);    /* primary text */
   --color-success:           oklch(62% 0.170 149);
   --color-success-content:   oklch(100% 0 0);
   --color-warning:           oklch(72% 0.160 58);
   --color-warning-content:   oklch(20% 0.040 50);
   --color-error:             oklch(55% 0.220 27);
   --color-error-content:     oklch(97% 0.010 22);
-  --color-info:              oklch(68% 0.090 200);   /* teal muted — readable, ไม่ขัด palette แดง */
+  --color-info:              oklch(68% 0.090 200);   /* teal muted — readable, doesn't clash with red palette */
   --color-info-content:      oklch(15% 0.010 200);
 }
 
 /* LIGHT THEME — Deep Red / Darkroom palette */
 :root[data-theme=light],
 [data-theme=light] {
-  --color-primary:           oklch(48% 0.220 22);    /* แดงอิฐ — เข้มพอบน white */
+  --color-primary:           oklch(48% 0.220 22);    /* brick red — dark enough on white */
   --color-primary-content:   oklch(98% 0.008 22);
-  --color-secondary:         oklch(40% 0.150 18);    /* แดงเข้ม */
+  --color-secondary:         oklch(40% 0.150 18);    /* deep red */
   --color-secondary-content: oklch(98% 0.008 22);
-  --color-accent:            oklch(65% 0.155 65);    /* ทอง — เข้มขึ้นเล็กน้อยบน light */
+  --color-accent:            oklch(65% 0.155 65);    /* gold — slightly deeper on light */
   --color-accent-content:    oklch(20% 0.040 40);
   --color-neutral:           oklch(90% 0.010 22);    /* warm light grey */
   --color-neutral-content:   oklch(25% 0.025 22);
-  --color-base-100:          oklch(99% 0.005 22);    /* ขาวอุ่น */
+  --color-base-100:          oklch(99% 0.005 22);    /* warm white */
   --color-base-200:          oklch(95% 0.008 22);
   --color-base-300:          oklch(90% 0.012 22);
-  --color-base-content:      oklch(22% 0.025 22);    /* text หลักบน light */
+  --color-base-content:      oklch(22% 0.025 22);    /* primary text on light */
   --color-success:           oklch(58% 0.170 149);
   --color-success-content:   oklch(100% 0 0);
   --color-warning:           oklch(65% 0.160 58);
   --color-warning-content:   oklch(20% 0.040 50);
   --color-error:             oklch(52% 0.220 27);
   --color-error-content:     oklch(100% 0 0);
-  --color-info:              oklch(55% 0.090 200);   /* teal muted — readable บน white, ไม่ขัด palette */
+  --color-info:              oklch(55% 0.090 200);   /* teal muted — readable on white, doesn't clash with palette */
   --color-info-content:      oklch(100% 0 0);
 }

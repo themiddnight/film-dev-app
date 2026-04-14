@@ -26,6 +26,7 @@ export default function EditRecipePage() {
 
   useEffect(() => {
     if (!recipe) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setName(recipe.name)
     setDescription(recipe.description ?? '')
     setStepType((recipe.step_type ?? 'developer') as RecipeStepType)

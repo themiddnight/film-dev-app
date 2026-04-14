@@ -3,6 +3,7 @@ import { Download, RefreshCw, Settings } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import { useEquipmentStore } from '../store/equipmentStore'
 import { usePwaStore } from '../store/pwaStore'
+import { useSettingsStore } from '../store/settingsStore'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -12,11 +13,13 @@ type BeforeInstallPromptEvent = Event & {
 export default function SettingsPage() {
   const { equipment, setEquipment } = useEquipmentStore()
   const { isRegistered, isOfflineReady, hasUpdate, reloadWithUpdate } = usePwaStore()
+  const { sound, vibrate, screenFlash, update } = useSettingsStore()
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
 
   useEffect(() => {
     const displayMode = window.matchMedia('(display-mode: standalone)')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsInstalled(displayMode.matches)
 
     const onBeforeInstallPrompt = (event: Event) => {
@@ -102,6 +105,50 @@ export default function SettingsPage() {
 
         <div className="text-xs text-sub">
           Dev setup can override these values temporarily for each session and will not save back here.
+        </div>
+
+        <div className="divider my-1" />
+
+        <div>
+          <p className="text-xs text-sub uppercase font-medium mb-3">Agitation Notifications</p>
+          <div className="space-y-3">
+            <label className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Sound</p>
+                <p className="text-xs text-sub">Play a beep when agitation starts</p>
+              </div>
+              <input
+                type="checkbox"
+                className="toggle toggle-primary"
+                checked={sound}
+                onChange={(e) => update({ sound: e.target.checked })}
+              />
+            </label>
+            <label className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Vibrate</p>
+                <p className="text-xs text-sub">Vibrate device when agitation starts</p>
+              </div>
+              <input
+                type="checkbox"
+                className="toggle toggle-primary"
+                checked={vibrate}
+                onChange={(e) => update({ vibrate: e.target.checked })}
+              />
+            </label>
+            <label className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Screen Flash</p>
+                <p className="text-xs text-sub">Flash screen when agitation starts</p>
+              </div>
+              <input
+                type="checkbox"
+                className="toggle toggle-primary"
+                checked={screenFlash}
+                onChange={(e) => update({ screenFlash: e.target.checked })}
+              />
+            </label>
+          </div>
         </div>
 
         <div className="divider my-1" />
