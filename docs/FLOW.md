@@ -32,6 +32,8 @@
 | **Recipe** | สูตรสำหรับ **1 chemical step** — developer, stop, fixer, wash_aid หรือ wetting_agent | ไม่ใช่ bundle อีกต่อไป |
 | **System Recipe** | Recipe ที่ทีม seed ไว้ ทุกคนใช้ได้ | verified + read-only |
 | **Personal Recipe** | Recipe ที่ user สร้างเอง private by default | สร้างได้เร็ว ไม่ผ่าน review |
+| **Favorite Recipe** | ความสัมพันธ์ระหว่าง user กับ recipe (`recipe_id`) | ไม่ copy recipe เป็น personal |
+| **Offline Saved Recipe** | snapshot ของ recipe ที่ user save ไว้อ่าน offline | เก็บใน IndexedDB |
 | **Community Recipe** | Personal recipe ที่ user publish ออก community | ผ่าน admin review |
 | **Inventory Item** | ขวดน้ำยาที่ผสมแล้ว มี lifecycle (mixed_date, use_count, status) | link กลับไป Recipe เสมอ |
 | **Kit** | Step preset — ordered list ของ Inventory Items ที่จะใช้ใน session | pointer ไม่ใช่ copy |
@@ -96,7 +98,8 @@ Recipes page
  └─ System tab
  Filter: step_type / film / search
  → แตะ recipe → Recipe detail
- → [Save เป็น Favourite] ← เพิ่มใน personal list
+ → [Add favourite] ← บันทึก relation ด้วย `recipe_id`
+ → [Save for offline] ← เก็บ recipe snapshot ลง IndexedDB
  → [ใช้ใน Mixing Guidance] ← shortcut ข้ามไป Flow 2
 ```
 
@@ -405,7 +408,9 @@ Dev tab (หน้าแรกเมื่อเปิดแอพ)
 
 ---
 
-## localStorage Keys (Phase 2 — ก่อนมี backend)
+## Persistence Map (Phase 2 — ก่อนมี backend)
+
+### localStorage Keys
 
 | Key | เนื้อหา | Entity |
 |-----|---------|--------|
@@ -416,11 +421,20 @@ Dev tab (หน้าแรกเมื่อเปิดแอพ)
 | `settings` | app settings | settings object |
 | `equipment` | equipment profile | `EquipmentProfile` |
 
+### IndexedDB (Dexie / FilmDevDB)
+
+| Table | เนื้อหา | Entity |
+|------|---------|--------|
+| `favoriteRecipes` | recipe ids ที่ user กด favourite | `FavoriteRecipe[]` |
+| `offlineSavedRecipes` | recipe snapshots สำหรับ offline read | `OfflineSavedRecipe[]` |
+
 > หมายเหตุ: standard keys (no prefix) ทุก key เพื่อแยกจาก V1 data (`my-kit`, `my-kit-devkits` ฯลฯ) ชัดเจน
 
 ---
 
-## Session State (Zustand — ไม่ใช่ localStorage)
+## Session State (Zustand)
+
+หมายเหตุ: stores บางตัวใช้ `persist` และถูกเก็บใน localStorage (`settings`, `equipment`, `dev-session`, `mixing`)
 
 ```ts
 // developStore.ts ()

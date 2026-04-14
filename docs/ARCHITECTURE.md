@@ -17,9 +17,26 @@ Layer 1 — Knowledge (static/curated)
 
 Layer 2 — User's World (dynamic/personal)
  Inventory, kits, session history, settings
- Current: localStorage (throwaway — no migration plan)
+ Current: hybrid local persistence (localStorage + IndexedDB)
  Phase 3: PostgreSQL tied to user account
 ```
+
+### Current Persistence Reality (After PWA Foundation)
+
+Current code is no longer "localStorage-only". Persistence is intentionally split:
+
+- localStorage:
+	- `recipes` (personal recipes)
+	- `inventory`, `kits`, `sessions` (user-owned runtime data)
+	- Zustand persist stores: `settings`, `equipment`, `dev-session`, `mixing`
+- IndexedDB (Dexie / `FilmDevDB`):
+	- `favoriteRecipes` (recipe relation only)
+	- `offlineSavedRecipes` (recipe snapshot for offline read)
+
+This split is a stepping stone to backend sync:
+- keep existing local repositories stable for current UX
+- isolate favorites/offline-saved as separate entities (do not clone recipes)
+- prepare API swap at repository boundary in Phase 3
 
 ### ทำไม throwaway ได้?
 
@@ -80,7 +97,25 @@ export class LocalKitRepository implements KitRepository {
  private readonly KEY = 'kits'
  // reads/writes localStorage
 }
+
+// src/repositories/local/localDb.ts
+// IndexedDB tables for favorites + offline-saved snapshots
+export const filmDevDb = new FilmDevDb()
 ```
+
+### Backend Phase Continuation (Planned)
+
+Phase 3 should migrate persistence by concern, not as one big switch:
+
+1. Shared recipe browse/read:
+	- `RecipeRepository` moves to API-backed for system/community reads
+	- keep offline fallback only for `offlineSavedRecipes`
+2. User-owned records:
+	- inventory/kits/sessions move from localStorage to API with account scope
+	- keep local cache for optimistic UX and offline resilience
+3. Sync semantics:
+	- favorites sync as recipe-id relations
+	- offline-saved snapshots remain device-local cache with `source_updated_at` staleness checks
 
 ### Phase 3 Implementations (API) — เพิ่มทีหลัง
 

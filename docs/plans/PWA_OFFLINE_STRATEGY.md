@@ -1,5 +1,19 @@
 # PWA Offline Strategy — User-Driven Download
 
+## Current Status (Implemented vs Next)
+
+Implemented now:
+- PWA app shell with `vite-plugin-pwa` + Workbox (installable app, update flow)
+- Service worker registration and update prompt wiring in Settings UI
+- IndexedDB (Dexie) tables:
+	- `favoriteRecipes`
+	- `offlineSavedRecipes`
+
+Not implemented yet (next phase):
+- Backend API read/write for recipes, inventory, kits, sessions
+- Account-based sync for favorites/inventory/kits
+- Staleness check against backend `updatedAt/version` and sync conflict policy
+
 ## แนวคิดหลัก
 
 ใช้รูปแบบเดียวกับ Netflix, YouTube, และ Google Maps โดยให้ **user เป็นคนตัดสินใจ** ว่าจะ download recipe ใดไว้ใช้งาน offline เอง
@@ -17,20 +31,20 @@
 
 ```
 [Recipe Card / Detail Page]
-  → ปุ่ม "Download for Offline"
-  → Fetch recipe detail จาก API
-  → บันทึกข้อมูล (JSON) ลง IndexedDB
-  → Cache รูปภาพ (ถ้ามี) ลง Cache Storage
-  → แสดง status = "Downloaded ✓"
+ → ปุ่ม "Download for Offline"
+ → Fetch recipe detail จาก API
+ → บันทึกข้อมูล (JSON) ลง IndexedDB
+ → Cache รูปภาพ (ถ้ามี) ลง Cache Storage
+ → แสดง status = "Downloaded ✓"
 ```
 
 ### การอ่านข้อมูล
 
 ```
 [Recipe Detail Page]
-  → ถ้า Online  → Fetch จาก API (ข้อมูลล่าสุดเสมอ)
-  → ถ้า Offline + Downloaded → อ่านจาก IndexedDB
-  → ถ้า Offline + ไม่มี  → แสดง UI "ไม่พร้อมใช้งาน offline" + ลิงก์ให้ download เมื่อมีเน็ต
+ → ถ้า Online → Fetch จาก API (ข้อมูลล่าสุดเสมอ)
+ → ถ้า Offline + Downloaded → อ่านจาก IndexedDB
+ → ถ้า Offline + ไม่มี → แสดง UI "ไม่พร้อมใช้งาน offline" + ลิงก์ให้ download เมื่อมีเน็ต
 ```
 
 ---
@@ -44,6 +58,11 @@
 | Service Worker | **Workbox** (ผ่าน vite-plugin-pwa) | Cache static files (HTML/JS/CSS), intercept requests |
 | State Management | Zustand (มีอยู่แล้ว) | track ว่า recipe ไหน downloaded |
 
+หมายเหตุเชิง implementation ปัจจุบัน:
+- App shell/static assets ใช้ service worker cache
+- Shared recipe content ยังเป็น online-first
+- Offline read สำหรับ recipe ใช้ snapshot ใน IndexedDB เฉพาะที่ user save ไว้
+
 ---
 
 ## Schema IndexedDB (เบื้องต้น)
@@ -51,22 +70,29 @@
 ```ts
 // ตัวอย่างด้วย Dexie.js
 class FilmDevDB extends Dexie {
-  downloadedRecipes!: Table<DownloadedRecipe>
+ downloadedRecipes!: Table<DownloadedRecipe>
 
-  constructor() {
-    super('FilmDevDB')
-    this.version(1).stores({
-      downloadedRecipes: 'id, downloadedAt, version'
-    })
-  }
+ constructor() {
+ super('FilmDevDB')
+ this.version(1).stores({
+ downloadedRecipes: 'id, downloadedAt, version'
+ })
+ }
 }
 
 interface DownloadedRecipe {
-  id: string
-  downloadedAt: number   // timestamp
-  version: number        // สำหรับ detect update
-  data: RecipeDetail     // full recipe object
+ id: string
+ downloadedAt: number // timestamp
+ version: number // สำหรับ detect update
+ data: RecipeDetail // full recipe object
 }
+```
+
+Schema ที่ใช้อยู่ปัจจุบันใน codebase:
+
+```ts
+favoriteRecipes: '&recipe_id, created_at'
+offlineSavedRecipes: '&recipe_id, saved_at, source_updated_at'
 ```
 
 ---
