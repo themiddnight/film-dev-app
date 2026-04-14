@@ -42,7 +42,7 @@ export default defineConfig({
         runtimeCaching: [
           {
             // Keep shared content online-first. Only app shell/static should be strongly cached.
-            urlPattern: ({ request }) => request.mode === 'navigate',
+            urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
             handler: 'NetworkFirst',
             options: {
               cacheName: 'app-pages',
