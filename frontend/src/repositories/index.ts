@@ -1,5 +1,5 @@
 // repositories/index.ts
-// Module-level singletons — เปลี่ยนแค่ 2 บรรทัดนี้เมื่อ Phase 3 พร้อม:
+// Module-level singletons — swap only these 2 lines when Phase 3 is ready:
 //   import { ApiRecipeRepository } from './api/ApiRecipeRepository'
 //   import { ApiKitRepository } from './api/ApiKitRepository'
 //   export const recipeRepo: RecipeRepository = new ApiRecipeRepository(httpClient)

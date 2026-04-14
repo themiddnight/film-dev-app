@@ -1,5 +1,5 @@
 // repositories/RecipeRepository.ts
-// Interface สำหรับ data access layer ของ recipes
+// Interface for the data access layer of recipes
 // Current: LocalRecipeRepository (system + personal)
 // Phase 3: ApiRecipeRepository (REST API)
 

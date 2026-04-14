@@ -1,5 +1,5 @@
 // repositories/KitRepository.ts
-// Interface สำหรับ data access layer ของ  Kits.
+// Interface for the data access layer of Kits.
 
 import type { Kit } from '../types/kit'
 

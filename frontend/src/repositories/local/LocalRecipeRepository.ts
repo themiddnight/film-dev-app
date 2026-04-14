@@ -1,6 +1,6 @@
 // repositories/local/LocalRecipeRepository.ts
 // Local recipe repository: system recipes + personal localStorage recipes.
-// Phase 3: swap ออกเป็น ApiRecipeRepository โดยไม่แตะ component
+// Phase 3: swap out for ApiRecipeRepository without touching any component
 
 import type { RecipeRepository } from '../RecipeRepository'
 import type { Recipe } from '../../types/recipe'

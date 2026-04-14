@@ -6,6 +6,7 @@ import { useInventory } from '../hooks/useInventory'
 import { useKits } from '../hooks/useKits'
 import { useRecipes } from '../hooks/useRecipes'
 import type { InventoryItem } from '../types/inventory'
+import type { DeveloperBathRole } from '../types/inventory'
 import type { Kit, KitSlot, KitSlotType } from '../types/kit'
 import type { Recipe, RecipeStepType } from '../types/recipe'
 
@@ -16,6 +17,7 @@ type ItemForm = {
   name: string
   recipe_id: string
   step_type: RecipeStepType
+  developer_bath_role: DeveloperBathRole
   bottle_type: 'one-shot' | 'reusable'
   mixed_date: string
   shelf_life_days: string
@@ -48,6 +50,7 @@ function defaultInventoryForm(): ItemForm {
     name: '',
     recipe_id: '',
     step_type: 'developer',
+    developer_bath_role: 'single',
     bottle_type: 'reusable',
     mixed_date: todayISO(),
     shelf_life_days: '',
@@ -74,13 +77,17 @@ function defaultDraftKit(): DraftKit {
 function validateDraft(draft: DraftKit): { errors: string[]; warnings: string[] } {
   const errors: string[] = []
   const warnings: string[] = []
-
-  const developer = draft.slots.find((slot) => slot.slot_type === 'developer')
-  const fixer = draft.slots.find((slot) => slot.slot_type === 'fixer')
   const stop = draft.slots.find((slot) => slot.slot_type === 'stop')
 
-  if (!developer?.inventory_item_id) errors.push('Developer slot is required')
-  if (!fixer?.inventory_item_id) errors.push('Fixer slot is required')
+  for (const slot of draft.slots.filter((slot) => !slot.optional)) {
+    if (!slot.inventory_item_id) {
+      const roleSuffix = slot.slot_type === 'developer' && slot.developer_slot_role
+        ? ` (${slot.developer_slot_role.replace('_', ' ').toUpperCase()})`
+        : ''
+      errors.push(`${slot.slot_type}${roleSuffix} slot is required`)
+    }
+  }
+
   if (!stop?.inventory_item_id) warnings.push('Stop slot is empty (water stop fallback)')
 
   return { errors, warnings }
@@ -92,9 +99,25 @@ function statusColor(status: InventoryItem['status']): string {
   return 'badge-error'
 }
 
+function developerRoleBadge(role: InventoryItem['developer_bath_role']): string | null {
+  if (!role || role === 'single') return null
+  return role === 'bath_a' ? 'Bath A' : 'Bath B'
+}
+
 function slotBlueprint(devCount: number): Array<{ type: KitSlotType; optional: boolean }> {
+  if (Math.max(1, devCount) > 1) {
+    return [
+      { type: 'developer' as KitSlotType, optional: false },
+      { type: 'developer' as KitSlotType, optional: false },
+      { type: 'stop' as KitSlotType, optional: true },
+      { type: 'fixer' as KitSlotType, optional: false },
+      { type: 'wash_aid' as KitSlotType, optional: true },
+      { type: 'wetting_agent' as KitSlotType, optional: true },
+    ]
+  }
+
   return [
-    ...Array.from({ length: Math.max(1, devCount) }).map(() => ({ type: 'developer' as KitSlotType, optional: false })),
+    { type: 'developer' as KitSlotType, optional: false },
     { type: 'stop' as KitSlotType, optional: true },
     { type: 'fixer' as KitSlotType, optional: false },
     { type: 'wash_aid' as KitSlotType, optional: true },
@@ -113,9 +136,14 @@ function remapSlots(existing: KitSlot[], devCount: number): KitSlot[] {
 
   return slotBlueprint(devCount).map((blueprint, index) => {
     const reused = byType[blueprint.type].shift()
+    const role = blueprint.type === 'developer' && devCount > 1
+      ? (index === 0 ? 'bath_a' : 'bath_b')
+      : undefined
+
     return {
       id: reused?.id ?? crypto.randomUUID(),
       slot_type: blueprint.type,
+      developer_slot_role: role,
       inventory_item_id: reused?.inventory_item_id ?? null,
       order: index,
       optional: blueprint.optional,
@@ -125,11 +153,31 @@ function remapSlots(existing: KitSlot[], devCount: number): KitSlot[] {
 }
 
 function getDeveloperRecipe(draft: DraftKit, items: { id: string; recipe_id: string }[], recipesById: Map<string, Recipe>) {
-  const devSlot = draft.slots.find((slot) => slot.slot_type === 'developer')
+  const devSlot = draft.slots.find((slot) => slot.slot_type === 'developer' && slot.developer_slot_role === 'bath_a')
+    ?? draft.slots.find((slot) => slot.slot_type === 'developer')
   if (!devSlot?.inventory_item_id) return null
   const devItem = items.find((item) => item.id === devSlot.inventory_item_id)
   if (!devItem) return null
   return recipesById.get(devItem.recipe_id) ?? null
+}
+
+function isPyroDeveloper(recipe: Recipe): boolean {
+  const keywords = ['pyro', 'pyrogallol', 'pyrocatechin', 'catechol', 'pyrocat']
+  const names = [
+    recipe.name,
+    ...(recipe.tags ?? []),
+    ...(recipe.chemicals ?? []).map((chem) => chem.name),
+    ...((recipe.baths ?? []).flatMap((bath) => (bath.chemicals ?? []).map((chem) => chem.name))),
+  ]
+
+  const text = names.join(' ').toLowerCase()
+  return keywords.some((keyword) => text.includes(keyword))
+}
+
+function isAlkalineFixer(recipe: Recipe | null): boolean {
+  if (!recipe) return false
+  const text = [recipe.name, ...(recipe.tags ?? [])].join(' ').toLowerCase()
+  return text.includes('alkaline') || text.includes('tf-4') || text.includes('tf-5')
 }
 
 export default function KitsPage() {
@@ -182,13 +230,9 @@ export default function KitsPage() {
     const fixerItem = fixerSlot?.inventory_item_id ? itemById.get(fixerSlot.inventory_item_id) : null
     const fixerRecipe = fixerItem ? recipeById.get(fixerItem.recipe_id) : null
 
-    if (developerRecipe?.constraints?.required_fixer_type === 'alkaline') {
-      const fixerLooksAlkaline = !!fixerRecipe?.tags?.some(
-        (tag) => tag.toLowerCase().includes('alkaline') || tag.toLowerCase().includes('tf-4') || tag.toLowerCase().includes('tf-5'),
-      )
-      if (fixerRecipe && !fixerLooksAlkaline) {
-        errors.push('Pyro/alkaline developer requires alkaline fixer (TF-4/TF-5)')
-      }
+    const needsAlkalineFixer = (developerRecipe?.constraints?.required_fixer_type === 'alkaline') || !!(developerRecipe && isPyroDeveloper(developerRecipe))
+    if (needsAlkalineFixer && fixerRecipe && !isAlkalineFixer(fixerRecipe)) {
+      errors.push('Pyro developer requires alkaline fixer (TF-4/TF-5)')
     }
 
     return errors
@@ -204,6 +248,7 @@ export default function KitsPage() {
       name: item.name,
       recipe_id: item.recipe_id,
       step_type: item.step_type,
+      developer_bath_role: item.developer_bath_role ?? 'single',
       bottle_type: item.bottle_type,
       mixed_date: item.mixed_date,
       shelf_life_days: item.shelf_life_days ? String(item.shelf_life_days) : '',
@@ -228,6 +273,7 @@ export default function KitsPage() {
         step_type: editingItem.step_type,
       },
       step_type: editingItem.step_type,
+      developer_bath_role: editingItem.step_type === 'developer' ? editingItem.developer_bath_role : undefined,
       bottle_type: editingItem.bottle_type,
       mixed_date: editingItem.mixed_date,
       shelf_life_days: editingItem.shelf_life_days ? Number(editingItem.shelf_life_days) : undefined,
@@ -330,13 +376,25 @@ export default function KitsPage() {
                 onClick={() => setSelectedInventoryId(item.id)}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <div className="font-semibold text-sm">{item.name}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-sm truncate">{item.name}</div>
                     <div className="text-xs text-sub mt-0.5 capitalize">
                       {item.step_type} · {item.bottle_type} · used {item.use_count}
                     </div>
                   </div>
-                  <span className={`badge badge-xs ${statusColor(item.status)}`}>{item.status}</span>
+                  <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                    {item.step_type === 'developer' && developerRoleBadge(item.developer_bath_role) && (
+                      <>
+                        <span className={`badge badge-xs ${item.developer_bath_role === 'bath_a' ? 'badge-info' : 'badge-secondary'}`}>
+                          {developerRoleBadge(item.developer_bath_role)}
+                        </span>
+                        {item.developer_bath_role === 'bath_b' && item.n_level && (
+                          <span className="badge badge-xs badge-accent">{item.n_level}</span>
+                        )}
+                      </>
+                    )}
+                    <span className={`badge badge-xs ${statusColor(item.status)}`}>{item.status}</span>
+                  </div>
                 </div>
               </button>
             ))}
@@ -359,6 +417,7 @@ export default function KitsPage() {
                 <p>Use count: {selectedItem.use_count}</p>
                 <p>Max rolls: {selectedItem.max_rolls ?? '-'}</p>
                 <p>Shelf life: {selectedItem.shelf_life_days ?? '-'} days</p>
+                <p>Dev bath: {selectedItem.step_type === 'developer' ? (developerRoleBadge(selectedItem.developer_bath_role) ?? 'single') + (selectedItem.n_level ? ` (${selectedItem.n_level})` : '') : '-'}</p>
               </div>
 
               <div className="flex gap-2 flex-wrap">
@@ -423,6 +482,19 @@ export default function KitsPage() {
                       Kit contains expired/exhausted inventory
                     </div>
                   )}
+
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {kit.slots
+                      .filter((slot) => slot.slot_type === 'developer' && slot.developer_slot_role)
+                      .map((slot) => (
+                        <span
+                          key={slot.id}
+                          className={`badge badge-xs ${slot.developer_slot_role === 'bath_a' ? 'badge-info' : 'badge-secondary'}`}
+                        >
+                          {slot.developer_slot_role === 'bath_a' ? 'Bath A slot' : 'Bath B slot'}
+                        </span>
+                      ))}
+                  </div>
                 </div>
               )
             })}
@@ -467,12 +539,14 @@ export default function KitsPage() {
                 value={editingItem.recipe_id}
                 onChange={(e) => {
                   const recipe = recipes.find((r) => r.id === e.target.value)
+                  const isTwoBath = !!recipe?.constraints?.is_two_bath
                   setEditingItem((prev) =>
                     prev
                       ? {
                           ...prev,
                           recipe_id: e.target.value,
                           step_type: (recipe?.step_type ?? prev.step_type) as RecipeStepType,
+                          developer_bath_role: isTwoBath ? 'bath_a' : 'single',
                         }
                       : prev,
                   )
@@ -494,7 +568,15 @@ export default function KitsPage() {
                   className="select select-bordered w-full"
                   value={editingItem.step_type}
                   onChange={(e) =>
-                    setEditingItem((prev) => (prev ? { ...prev, step_type: e.target.value as RecipeStepType } : prev))
+                    setEditingItem((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            step_type: e.target.value as RecipeStepType,
+                            developer_bath_role: e.target.value === 'developer' ? prev.developer_bath_role : 'single',
+                          }
+                        : prev,
+                    )
                   }
                 >
                   {STEP_TYPES.filter((v) => v !== 'all').map((type) => (
@@ -521,6 +603,25 @@ export default function KitsPage() {
                 </select>
               </div>
             </div>
+
+            {editingItem.step_type === 'developer' && (
+              <div>
+                <label className="text-xs text-sub block mb-1">Developer bath role</label>
+                <select
+                  className="select select-bordered w-full"
+                  value={editingItem.developer_bath_role}
+                  onChange={(e) =>
+                    setEditingItem((prev) =>
+                      prev ? { ...prev, developer_bath_role: e.target.value as DeveloperBathRole } : prev,
+                    )
+                  }
+                >
+                  <option value="single">single-bath developer</option>
+                  <option value="bath_a">Bath A (two-bath)</option>
+                  <option value="bath_b">Bath B (two-bath)</option>
+                </select>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -625,10 +726,24 @@ export default function KitsPage() {
 
             <div className="space-y-2">
               {draftKit.slots.map((slot) => {
-                const candidates = items.filter((item) => item.step_type === slot.slot_type)
+                const candidates = items.filter((item) => {
+                  if (item.step_type !== slot.slot_type) return false
+                  if (slot.slot_type !== 'developer') return true
+
+                  if (slot.developer_slot_role === 'bath_a') return item.developer_bath_role === 'bath_a'
+                  if (slot.developer_slot_role === 'bath_b') return item.developer_bath_role === 'bath_b'
+
+                  // Initial developer slot (before two-bath split): allow any developer bottle.
+                  return true
+                })
+
+                const slotLabel = slot.slot_type === 'developer' && slot.developer_slot_role
+                  ? `developer (${slot.developer_slot_role.replace('_', ' ').toUpperCase()})`
+                  : slot.slot_type
+
                 return (
                   <div key={slot.id} className="space-y-1">
-                    <label className="text-xs text-sub capitalize">{slot.slot_type}</label>
+                    <label className="text-xs text-sub capitalize">{slotLabel}</label>
                     <select
                       className="select select-bordered w-full"
                       value={slot.inventory_item_id ?? ''}
@@ -641,7 +756,7 @@ export default function KitsPage() {
                                     s.id === slot.id ? { ...s, inventory_item_id: e.target.value || null } : s,
                                   )
 
-                                  if (slot.slot_type !== 'developer') {
+                                  if (slot.slot_type !== 'developer' || slot.developer_slot_role === 'bath_b') {
                                     return { ...prev, slots: nextSlots }
                                   }
 
