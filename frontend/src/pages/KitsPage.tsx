@@ -104,8 +104,8 @@ function developerRoleBadge(role: InventoryItem['developer_bath_role']): string 
   return role === 'bath_a' ? 'Bath A' : 'Bath B'
 }
 
-function slotBlueprint(devCount: number): Array<{ type: KitSlotType; optional: boolean }> {
-  if (Math.max(1, devCount) > 1) {
+function slotBlueprint(isTwoBathDeveloper: boolean): Array<{ type: KitSlotType; optional: boolean }> {
+  if (isTwoBathDeveloper) {
     return [
       { type: 'developer' as KitSlotType, optional: false },
       { type: 'developer' as KitSlotType, optional: false },
@@ -125,7 +125,7 @@ function slotBlueprint(devCount: number): Array<{ type: KitSlotType; optional: b
   ]
 }
 
-function remapSlots(existing: KitSlot[], devCount: number): KitSlot[] {
+function remapSlots(existing: KitSlot[], isTwoBathDeveloper: boolean): KitSlot[] {
   const byType: Record<KitSlotType, KitSlot[]> = {
     developer: existing.filter((s) => s.slot_type === 'developer'),
     stop: existing.filter((s) => s.slot_type === 'stop'),
@@ -134,9 +134,9 @@ function remapSlots(existing: KitSlot[], devCount: number): KitSlot[] {
     wetting_agent: existing.filter((s) => s.slot_type === 'wetting_agent'),
   }
 
-  return slotBlueprint(devCount).map((blueprint, index) => {
+  return slotBlueprint(isTwoBathDeveloper).map((blueprint, index) => {
     const reused = byType[blueprint.type].shift()
-    const role = blueprint.type === 'developer' && devCount > 1
+    const role = blueprint.type === 'developer' && isTwoBathDeveloper
       ? (index === 0 ? 'bath_a' : 'bath_b')
       : undefined
 
@@ -764,7 +764,7 @@ export default function KitsPage() {
                                   const selectedDevRecipe = selectedDevItem ? recipeById.get(selectedDevItem.recipe_id) : null
                                   const needsTwoBath = !!selectedDevRecipe?.constraints?.is_two_bath
 
-                                  const normalizedSlots = remapSlots(nextSlots, needsTwoBath ? 2 : 1)
+                                  const normalizedSlots = remapSlots(nextSlots, needsTwoBath)
                                   return { ...prev, slots: normalizedSlots }
                                 })(),
                               }

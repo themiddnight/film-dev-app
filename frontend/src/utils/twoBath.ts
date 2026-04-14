@@ -1,6 +1,8 @@
 import type { Chemical, MixingStep, PushPull, Recipe } from '../types/recipe'
 import type { TwoBathMixSelection } from '../store/mixingStore'
 
+type TwoBathRole = 'bath_a' | 'bath_b'
+
 export function isTwoBathRecipe(recipe: Recipe): boolean {
   return !!recipe.constraints?.is_two_bath
 }
@@ -17,16 +19,46 @@ function includesBathB(text: string): boolean {
   return /bath\s*b/.test(text)
 }
 
-function getBathChemicals(recipe: Recipe, role: 'bath_a' | 'bath_b', nLevel?: PushPull): Chemical[] {
-  const baths = recipe.baths ?? []
-  if (baths.length === 0) return []
+function getBathRefOrder(recipe: Recipe): string[] {
+  const steps = (recipe.develop_steps ?? []).filter(
+    (step) =>
+      (step.type === 'developer' || step.type === 'activator') &&
+      typeof step.bath_ref === 'string' &&
+      step.bath_ref.length > 0,
+  )
 
-  const target = baths.find((bath) => {
+  const refs: string[] = []
+  for (const step of steps) {
+    const ref = step.bath_ref!
+    if (!refs.includes(ref)) refs.push(ref)
+  }
+  return refs
+}
+
+function findBath(recipe: Recipe, role: TwoBathRole) {
+  const baths = recipe.baths ?? []
+  if (baths.length === 0) return null
+
+  const explicit = baths.find((bath) => bath.developer_bath_role === role)
+  if (explicit) return explicit
+
+  const refOrder = getBathRefOrder(recipe)
+  const ref = role === 'bath_a' ? refOrder[0] : refOrder[1]
+  if (ref) {
+    const byRef = baths.find((bath) => bath.id === ref)
+    if (byRef) return byRef
+  }
+
+  return baths.find((bath) => {
     const id = normalize(bath.id)
     const name = normalize(bath.name)
     if (role === 'bath_a') return includesBathA(id) || includesBathA(name)
     return includesBathB(id) || includesBathB(name)
-  })
+  }) ?? null
+}
+
+function getBathChemicals(recipe: Recipe, role: TwoBathRole, nLevel?: PushPull): Chemical[] {
+  const target = findBath(recipe, role)
 
   if (!target) return []
 
@@ -68,12 +100,7 @@ export function getMixingStepsForSelection(recipe: Recipe, selection: TwoBathMix
 
 /** Returns available N level keys from Bath B's n_variations, or [] if none defined. */
 export function getBathBNOptions(recipe: Recipe): PushPull[] {
-  const baths = recipe.baths ?? []
-  const bathB = baths.find((bath) => {
-    const id = normalize(bath.id)
-    const name = normalize(bath.name)
-    return includesBathB(id) || includesBathB(name)
-  })
+  const bathB = findBath(recipe, 'bath_b')
   if (!bathB?.n_variations) return []
   return Object.keys(bathB.n_variations) as PushPull[]
 }

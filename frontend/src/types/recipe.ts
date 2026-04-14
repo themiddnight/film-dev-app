@@ -116,6 +116,7 @@ export type Bath = {
   id: string                // "bath-a", "stop-bath", "fixer"
   name: string              // "Bath A — Developer"
   role: BathRole
+  developer_bath_role?: 'bath_a' | 'bath_b'
   chemical_format: ChemicalFormat
   mixing_required: boolean
   chemicals?: Chemical[]

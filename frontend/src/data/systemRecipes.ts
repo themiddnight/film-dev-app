@@ -241,6 +241,7 @@ export const systemRecipes: Recipe[] = [
         id: 'thornton-2bath-a',
         name: 'Bath A — Developer Solution',
         role: 'developer',
+        developer_bath_role: 'bath_a',
         chemical_format: 'powder_raw',
         mixing_required: true,
         chemicals: [
@@ -256,6 +257,7 @@ export const systemRecipes: Recipe[] = [
         id: 'thornton-2bath-b',
         name: 'Bath B — Alkaline Accelerator',
         role: 'developer',
+        developer_bath_role: 'bath_b',
         chemical_format: 'powder_raw',
         mixing_required: true,
         chemicals: [

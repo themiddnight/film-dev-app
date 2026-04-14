@@ -39,7 +39,26 @@ export const useMixingStore = create<MixingStore>()(
       currentRecipeIndex: 0,
       checkedMap: {},
 
-      setSelectedRecipeIds: (ids) => set({ selectedRecipeIds: ids }),
+      setSelectedRecipeIds: (ids) =>
+        set((prev) => {
+          const selected = new Set(ids)
+          const keepKeys = <T>(map: Record<string, T>): Record<string, T> => {
+            const next: Record<string, T> = {}
+            Object.keys(map).forEach((key) => {
+              if (selected.has(key)) next[key] = map[key]
+            })
+            return next
+          }
+
+          return {
+            selectedRecipeIds: ids,
+            selectedDilutions: keepKeys(prev.selectedDilutions),
+            twoBathSelections: keepKeys(prev.twoBathSelections),
+            twoBathNLevels: keepKeys(prev.twoBathNLevels),
+            currentRecipeIndex: 0,
+            checkedMap: {},
+          }
+        }),
       setMode: (mode) => set({ mode }),
       setTargetVolume: (ml) => set({ targetVolumeMl: ml }),
       setDilution: (recipeId, dilution) =>
