@@ -101,7 +101,7 @@ export default function CreateRecipeFullPage() {
         .filter(Boolean),
       film_types: filmScope === 'specific' ? selectedFilms : ['any'],
       base_volume_ml: 1000,
-      optimal_temp_range: stepType === 'developer' ? { min: optimalTempMin, max: optimalTempMax } : undefined,
+      optimal_temp: stepType === 'developer' ? { min: optimalTempMin, max: optimalTempMax } : undefined,
       baths: [],
       develop_steps: [],
       step_type: stepType,
@@ -114,7 +114,6 @@ export default function CreateRecipeFullPage() {
       chemical_format: chemicalFormat,
       chemicals: chemicals.length > 0 ? chemicals : undefined,
       mixing_steps: mixingSteps.length > 0 ? mixingSteps : undefined,
-      optimal_temp: stepType === 'developer' ? { min: optimalTempMin, max: optimalTempMax } : undefined,
       created_at: now,
       updated_at: now,
     })

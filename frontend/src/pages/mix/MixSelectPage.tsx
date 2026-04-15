@@ -67,7 +67,7 @@ export default function MixSelectPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Navbar title="Mix" subtitle="Multi-select recipes" showBack={false} left={<FlaskConical size={18} className="text-sub" />} />
+      <Navbar title="Mix" subtitle="Multi-select recipes" onBack={() => navigate('/dev')} left={<FlaskConical size={18} className="text-sub" />} />
 
       <div className="p-4 border-b border-base-300 space-y-3">
         <label className="input input-bordered flex items-center gap-2 w-full">

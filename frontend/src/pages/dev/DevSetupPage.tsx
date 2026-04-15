@@ -68,7 +68,7 @@ export default function DevSetupPage() {
         let resolvedKit: Kit | null = null
 
         if (resolvedSource.type === 'recipe') {
-          const recipe = await recipeRepo.getById(resolvedSource.recipeId)
+          const recipe = await recipeRepo.getById(resolvedSource.recipe_id)
           if (!cancelled) {
             setDeveloperRecipe(recipe)
             setKit(null)
@@ -76,7 +76,7 @@ export default function DevSetupPage() {
             resolvedRecipe = recipe
           }
         } else {
-          const k = await kitRepo.getById(resolvedSource.kitId)
+          const k = await kitRepo.getById(resolvedSource.kit_id)
           const allItems = await inventoryRepo.getAll()
           if (!k) {
             if (!cancelled) setLoading(false)
@@ -162,7 +162,7 @@ export default function DevSetupPage() {
 
   function start() {
     storeSetBathB(isTwoBath ? (selectedBathBItemId ?? null) : null)
-    startTimerSession(adjusted.seconds)
+    startTimerSession(adjusted.seconds, adjusted.compensationPct)
     navigate('/dev/timer')
   }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { favoriteRecipeRepo, offlineSavedRecipeRepo } from '../repositories'
 import type { Recipe } from '../types/recipe'
 
@@ -16,6 +16,14 @@ export function useRecipeCollections() {
     loading: true,
     error: null,
   })
+
+  // Refs give toggle/check callbacks always-fresh Set access without making
+  // the Sets themselves a useCallback dep (Sets are compared by reference,
+  // so a new Set after each reload would recreate every callback every render).
+  const favoriteIdsRef = useRef(state.favoriteIds)
+  favoriteIdsRef.current = state.favoriteIds
+  const offlineSavedIdsRef = useRef(state.offlineSavedIds)
+  offlineSavedIdsRef.current = state.offlineSavedIds
 
   const reload = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: null }))
@@ -42,26 +50,26 @@ export function useRecipeCollections() {
 
   const toggleFavorite = useCallback(
     async (recipeId: string) => {
-      const isFavorite = state.favoriteIds.has(recipeId)
+      const isFavorite = favoriteIdsRef.current.has(recipeId)
       if (isFavorite) await favoriteRecipeRepo.delete(recipeId)
       else await favoriteRecipeRepo.save(recipeId)
       await reload()
     },
-    [reload, state.favoriteIds],
+    [reload],
   )
 
   const toggleOfflineSaved = useCallback(
     async (recipe: Recipe) => {
-      const isSaved = state.offlineSavedIds.has(recipe.id)
+      const isSaved = offlineSavedIdsRef.current.has(recipe.id)
       if (isSaved) await offlineSavedRecipeRepo.delete(recipe.id)
       else await offlineSavedRecipeRepo.save(recipe)
       await reload()
     },
-    [reload, state.offlineSavedIds],
+    [reload],
   )
 
-  const isFavorite = useCallback((recipeId: string) => state.favoriteIds.has(recipeId), [state.favoriteIds])
-  const isOfflineSaved = useCallback((recipeId: string) => state.offlineSavedIds.has(recipeId), [state.offlineSavedIds])
+  const isFavorite = useCallback((recipeId: string) => favoriteIdsRef.current.has(recipeId), [])
+  const isOfflineSaved = useCallback((recipeId: string) => offlineSavedIdsRef.current.has(recipeId), [])
 
   return {
     ...state,

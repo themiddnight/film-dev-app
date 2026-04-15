@@ -40,6 +40,6 @@ export class LocalSessionRepository implements SessionRepository {
 
   async getRecentSessions(limit = 5): Promise<DevSession[]> {
     const sorted = await this.getAll()
-    return sorted.slice(0, Math.max(1, limit))
+    return sorted.slice(0, Math.max(0, limit))
   }
 }

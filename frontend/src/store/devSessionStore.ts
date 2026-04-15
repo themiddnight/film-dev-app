@@ -4,8 +4,8 @@ import type { DevSession, SessionSource } from '../types/session'
 import type { DevType } from '../types/settings'
 
 type DevSource =
-  | { type: 'kit'; kitId: string }
-  | { type: 'recipe'; recipeId: string }
+  | { type: 'kit'; kit_id: string }
+  | { type: 'recipe'; recipe_id: string }
 
 type DevSessionStore = {
   source: DevSource | null
@@ -20,11 +20,12 @@ type DevSessionStore = {
   completed_at: string | null
   inventory_updates: DevSession['inventory_updates']
   selected_bath_b_item_id: string | null
+  compensation_pct: number | undefined
 
   setSource: (source: DevSource) => void
   clearSource: () => void
   setConfig: (config: Partial<Pick<DevSessionStore, 'film_format' | 'rolls_count' | 'temperature_celsius' | 'dev_type' | 'agitation_method'>>) => void
-  startTimerSession: (targetSeconds: number) => void
+  startTimerSession: (targetSeconds: number, compensationPct?: number) => void
   completeTimerSession: (updates: DevSession['inventory_updates']) => void
   setSelectedBathBItemId: (id: string | null) => void
   resetRuntime: () => void
@@ -45,18 +46,20 @@ export const useDevSessionStore = create<DevSessionStore>()(
       completed_at: null,
       inventory_updates: [],
       selected_bath_b_item_id: null,
+      compensation_pct: undefined,
 
       setSource: (source) => set({ source }),
       clearSource: () => set({ source: null }),
 
       setConfig: (config) => set((prev) => ({ ...prev, ...config })),
 
-      startTimerSession: (targetSeconds) =>
+      startTimerSession: (targetSeconds, compensationPct) =>
         set({
           target_duration_seconds: targetSeconds,
           started_at: new Date().toISOString(),
           completed_at: null,
           inventory_updates: [],
+          compensation_pct: compensationPct,
         }),
 
       completeTimerSession: (updates) =>
@@ -74,6 +77,7 @@ export const useDevSessionStore = create<DevSessionStore>()(
           completed_at: null,
           inventory_updates: [],
           selected_bath_b_item_id: null,
+          compensation_pct: undefined,
         }),
 
       toSessionSource: (kitName) => {
@@ -82,13 +86,13 @@ export const useDevSessionStore = create<DevSessionStore>()(
         if (source.type === 'kit') {
           return {
             type: 'kit',
-            kit_id: source.kitId,
+            kit_id: source.kit_id,
             kit_name_snapshot: kitName ?? 'Kit',
           }
         }
         return {
           type: 'recipes',
-          recipe_ids: [source.recipeId],
+          recipe_ids: [source.recipe_id],
         }
       },
     }),

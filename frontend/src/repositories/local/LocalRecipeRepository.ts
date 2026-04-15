@@ -83,7 +83,7 @@ export class LocalRecipeRepository implements RecipeRepository {
       tags: recipe.tags ?? [],
       film_types: recipe.film_types ?? ['any'],
       base_volume_ml: recipe.base_volume_ml ?? 1000,
-      optimal_temp_range: recipe.optimal_temp_range ?? recipe.optimal_temp ?? { min: 20, max: 24 },
+      optimal_temp: recipe.optimal_temp ?? { min: 20, max: 24 },
       baths: recipe.baths ?? [],
       develop_steps: recipe.develop_steps ?? [],
       author_type: recipe.author_type ?? 'personal',

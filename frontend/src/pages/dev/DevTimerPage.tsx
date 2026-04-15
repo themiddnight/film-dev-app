@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useBlocker, useNavigate } from 'react-router-dom'
 import { Bell, Pause, Play } from 'lucide-react'
 import Navbar from '../../components/Navbar'
 import ConfirmLeaveModal from '../../components/ConfirmLeaveModal'
@@ -70,14 +70,36 @@ export default function DevTimerPage() {
   const [running, setRunning] = useState(false)
   const [phase, setPhase] = useState<'ready' | 'running'>('ready')
   const [isFlashing, setIsFlashing] = useState(false)
-  const [showExitModal, setShowExitModal] = useState(false)
+  const [manualExitModal, setManualExitModal] = useState(false)
+  const [pendingNavigateHome, setPendingNavigateHome] = useState(false)
   const prevAgitationRef = useRef(false)
   const flashIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // Block browser back gesture while timer phase is active (running or paused)
+  const blocker = useBlocker(useCallback(() => phase === 'running', [phase]))
+
+  // Derive modal visibility: triggered by the manual "exit session" button,
+  // or by browser back while timer is paused (blocker fires, not running)
+  const showExitModal = manualExitModal || (blocker.state === 'blocked' && !running)
+
+  // Silently block browser back when the timer is actively counting (not paused)
+  useEffect(() => {
+    if (blocker.state === 'blocked' && running) {
+      blocker.reset()
+    }
+  }, [blocker, running])
+
+  // Navigate home after phase has been cleared (avoids re-triggering the blocker)
+  useEffect(() => {
+    if (pendingNavigateHome) {
+      navigate('/dev')
+    }
+  }, [pendingNavigateHome, navigate])
+
   const currentStep = steps[stepIndex]
   const nextStep = steps[stepIndex + 1] ?? null
-  const sourceKitId = source && 'kitId' in source ? source.kitId : null
-  const sourceRecipeId = source && 'recipeId' in source ? source.recipeId : null
+  const sourceKitId = source && 'kit_id' in source ? source.kit_id : null
+  const sourceRecipeId = source && 'recipe_id' in source ? source.recipe_id : null
 
   useEffect(() => {
     if (!source) {
@@ -94,15 +116,17 @@ export default function DevTimerPage() {
       const built: TimerStep[] = []
 
       if (resolvedSource.type === 'recipe') {
-        const recipe = await recipeRepo.getById(resolvedSource.recipeId)
+        const recipe = await recipeRepo.getById(resolvedSource.recipe_id)
         if (recipe) {
           if (recipe.constraints?.is_two_bath && (recipe.develop_steps?.length ?? 0) > 0) {
             const twoBathSteps = getTwoBathTimingSteps(recipe)
             const baseTotal = twoBathSteps.reduce((sum, step) => sum + step.seconds, 0)
             const adjustedTotal = applyAdjustments(baseTotal, recipe, agitation_method).seconds
 
+            const bathATransitionWarning = twoBathSteps[0]?.transition_warning ?? 'Do not rinse — pour Bath B immediately'
+
             twoBathSteps.forEach((step, index) => {
-              const isLast = index === twoBathSteps.length - 1
+              const isBathB = index === 1
               const durationSeconds = Math.round(adjustedTotal * step.seconds / baseTotal)
 
               built.push({
@@ -111,7 +135,7 @@ export default function DevTimerPage() {
                 durationSeconds,
                 agitation: step.agitation,
                 warnings: step.warnings,
-                transitionWarning: !isLast ? (step.transition_warning ?? 'Do not rinse — pour Bath B immediately') : undefined,
+                transitionWarning: isBathB ? bathATransitionWarning : undefined,
               })
             })
           } else {
@@ -134,7 +158,7 @@ export default function DevTimerPage() {
           }
         }
       } else {
-        const kit = await kitRepo.getById(resolvedSource.kitId)
+        const kit = await kitRepo.getById(resolvedSource.kit_id)
         const allItems = await inventoryRepo.getAll()
         const slotItems = (kit?.slots ?? [])
           .sort((a, b) => a.order - b.order)
@@ -170,13 +194,10 @@ export default function DevTimerPage() {
             duration = 60
           }
 
-          const next = slotItems[i + 1]
-          const nextIsBathB = next?.item?.step_type === 'developer' && next.item?.developer_bath_role === 'bath_b'
-          const twoBathTransitionWarning = recipe.constraints?.is_two_bath
+          const prev = i > 0 ? slotItems[i - 1] : null
+          const prevIsBathA = prev?.item?.step_type === 'developer' && prev?.item?.developer_bath_role === 'bath_a'
+          const transitionWarning = item.step_type === 'developer' && item.developer_bath_role === 'bath_b' && prevIsBathA
             ? (getTwoBathTimingSteps(recipe)[0]?.transition_warning ?? 'Do not rinse — pour Bath B immediately')
-            : 'Do not rinse — pour Bath B immediately'
-          const transitionWarning = item.step_type === 'developer' && item.developer_bath_role === 'bath_a' && nextIsBathB
-            ? twoBathTransitionWarning
             : undefined
 
           built.push({
@@ -444,7 +465,7 @@ export default function DevTimerPage() {
             {!isTimerActive && (
               <p className="text-xs text-center text-sub mt-2">
                 or{' '}
-                <button className="underline" onClick={() => setShowExitModal(true)}>
+                <button className="underline" onClick={() => setManualExitModal(true)}>
                   exit session
                 </button>
               </p>
@@ -460,8 +481,17 @@ export default function DevTimerPage() {
         confirmLabel="Exit session"
         cancelLabel="Stay"
         danger
-        onConfirm={() => { navigate('/dev') }}
-        onCancel={() => setShowExitModal(false)}
+        onConfirm={() => {
+          setManualExitModal(false)
+          setPhase('ready')   // disable blocker condition
+          setRunning(false)
+          if (blocker.state === 'blocked') blocker.reset()
+          setPendingNavigateHome(true)
+        }}
+        onCancel={() => {
+          setManualExitModal(false)
+          if (blocker.state === 'blocked') blocker.reset() // restore blocker for next back attempt
+        }}
       />
     </div>
   )
