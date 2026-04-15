@@ -1,7 +1,7 @@
 # Film Dev Guidance — Data Model
 
 > Version: 2.0 (complete rethink)
-> Last updated: 2026-04-13
+> Last updated: 2026-04-16
 > Status: Planning — ยังไม่ได้ implement
 >
 > เอกสารนี้แทนที่ DATA_MODEL.md สำหรับ architecture
@@ -15,8 +15,28 @@
 ### V1 Recipe structure
 Recipe 1 ตัว = bundle ของ dev + stop + fix ครบในตัว มี `baths[]` และ `develop_steps[]` อยู่ใน recipe เดียวกัน
 
-### Recipe structure
+### V2 Recipe structure
 Recipe 1 ตัว = สูตรสำหรับ **chemical step เดียว** (developer, stop, fixer, wash_aid หรือ wetting_agent) ไม่มี bundle อีกต่อไป
+
+**ยกเว้น two-bath developer**: ยังคงใช้ bundle model โดยมี `baths[]` + `develop_steps[]` อยู่ใน recipe เดียวกัน เพราะ two baths ถือเป็น "recipe เดียว" ทาง mental model และต้องใช้คู่กันเสมอ (ดูรายละเอียดใน RULES_AND_CONSTRAINTS.md section 4)
+
+---
+
+## Developer Types — 1-Bath vs 2-Bath
+
+ดู `RULES_AND_CONSTRAINTS.md` section 4 สำหรับรายละเอียด chemistry และ rules
+
+### สรุป data model implications
+
+| | 1-Bath | 2-Bath |
+|---|--------|--------|
+| Recipe fields | `develop_timing` (temp/pushpull table) | `develop_steps[]` เก็บ duration per bath |
+| `baths[]` | ไม่มี (หรือ empty) | มี — Bath A + Bath B แยก |
+| `optimal_temp` | มี — ใช้ lookup | มี — เป็น guideline range เท่านั้น |
+| `agitation` | root level | อยู่ใน `develop_steps[].agitation` แต่ละ step |
+| `develop_timing` | required | **ไม่ใช้** — timing มาจาก `develop_steps` |
+| Push/Pull | ผ่านเวลา (`dev_type` key ใน timing table) | ผ่าน `n_level` บน Bath B bottle |
+| Temperature | ส่งผลต่อ timing (lookup table) | ไม่ส่งผลต่อ timing (แต่บันทึก log ไว้) |
 
 ---
 
@@ -277,6 +297,14 @@ type InventoryItem = {
  // ใช้เมื่อ step_type = 'developer'
  // single = developer ปกติ 1 ขวด
  // bath_a / bath_b = developer แบบ two-bath แยกขวด track อายุคนละตัว
+ bath_id?: string
+ // FK → Bath.id ใน recipe.baths[] JSONB — two-bath เท่านั้น
+ // derive อัตโนมัติจาก recipe_id + developer_bath_role ตอนบันทึก
+ // ใช้เพื่อ link ไปยัง mixing guide ของ bath นั้นโดยตรง
+ bath_id?: string
+ // FK → Bath.id ใน recipe.baths[] JSONB — two-bath เท่านั้น
+ // derive อัตโนมัติจาก recipe_id + developer_bath_role ตอนบันทึก
+ // ใช้เพื่อ link ไปยัง mixing guide ของ bath นั้นโดยตรง
  bottle_type: 'one-shot' | 'reusable'
 
  // Lifecycle
@@ -316,6 +344,7 @@ type Kit = {
  // - fixer slot ว่าง → error
  // - stop slot ว่าง → warn (ใช้ water stop เป็น fallback ได้)
  // - fixer เป็น paper grade → error ถ้า session สำหรับ film
+ // - [two-bath] Bath A กับ Bath B มี recipe_id ต่างกัน → error (ห้ามจับคู่ recipe ที่ไม่ใช่คู่กัน)
 
  created_at: string
  updated_at: string
@@ -344,7 +373,13 @@ type KitSlotType =
 - ห้ามมี stop slot ระหว่าง developer slots ใน two-bath
 - App validate ก่อน session โดย check `recipe.constraints.is_two_bath`
 - Slot filter: Bath A slot เลือกได้เฉพาะ inventory `developer_bath_role = bath_a`
-- Slot filter: Bath B slot เลือกได้เฉพาะ inventory `developer_bath_role = bath_b`
+- Slot filter: Bath B slot เลือกได้เฉพาะ inventory `developer_bath_role = bath_b` **ที่มี `recipe_id` เดียวกับ Bath A ที่เลือกอยู่เท่านั้น**
+
+**Two-Bath Pairing Rules:**
+- Bath A และ Bath B คือ `InventoryItem` คนละตัว — lifecycle (shelf life, use_count) track แยกกันอิสระ
+- ไม่มี constraint ว่าต้องผสม Bath A และ Bath B ในวันเดียวกัน — ต่างขวดได้
+- แต่ต้องมี `recipe_id` เดียวกันทุกครั้งที่ใส่ Kit — ห้ามจับ Thornton Bath A กับ D-23 Bath B
+- `bath_id` บน InventoryItem link ไปยัง `Bath.id` ใน JSONB — ใช้ดึง mixing guide ของขวดนั้น๒
 
 **ข้อสำคัญเรื่อง Shared Inventory:**
 - หลาย Kit สามารถ point ไป InventoryItem เดียวกันได้
@@ -737,3 +772,164 @@ Responsive: bottom nav บน mobile, sidebar บน tablet (768px+) และ d
 - **Chemistry domain knowledge:** `../Analog Photographic/film-chemistry-research.md`
 - **V1 Data Model (reference):** `DATA_MODEL.md` (deprecated สำหรับ )
 - **V1 Recipe Schema (reference):** `RECIPE_SCHEMA.md` (ยังใช้ได้บางส่วน — DilutionSpec, AgitationSpec, MixingStep ยังเหมือนเดิม)
+
+---
+
+## Database Schema (PostgreSQL + Drizzle ORM) — Phase 2
+
+> Section นี้เป็น reference สำหรับ backend implementation
+> ยังไม่ได้ implement — เป็น planned schema
+
+### Design Principles
+
+1. **JSONB สำหรับ nested chemistry data** — `baths`, `develop_steps`, `chemicals`, `mixing_steps`, `develop_timing`, `dilution`, `agitation`, `constraints`, `storage`, `film_compatibility` เป็น JSONB ทั้งหมด เพราะ:
+   - Query ส่วนใหญ่ดึงทั้ง recipe ไม่ได้ query ลงไปใน chemical individual
+   - Structure ซ้อนกันลึกและ variable — ไม่เหมาะกับ normalized tables
+   - Full-text search บน recipe name/tags เพียงพอสำหรับ Phase 2
+2. **Flat tables สำหรับ entities ที่ query บ่อย** — Recipe, InventoryItem, Kit, KitSlot, DevSession เป็น proper rows
+3. **1-Bath vs 2-Bath แตกต่างที่ระดับ data** ไม่แตกต่างที่ระดับ table:
+   - 1-Bath: มี `develop_timing` JSONB, ไม่มี `baths`
+   - 2-Bath: มี `baths` JSONB + `develop_steps` JSONB, ไม่มี `develop_timing`
+   - Discriminator: `constraints->>'is_two_bath'` หรือ `is_two_bath` column
+
+### Table Definitions
+
+```sql
+-- recipes
+CREATE TABLE recipes (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug        TEXT UNIQUE NOT NULL,
+  name        TEXT NOT NULL,
+  description TEXT,
+  step_type   TEXT NOT NULL CHECK (step_type IN ('developer','stop','fixer','wash_aid','wetting_agent')),
+  author_id   UUID REFERENCES users(id) ON DELETE SET NULL,
+  author_type TEXT NOT NULL CHECK (author_type IN ('system','personal','community')),
+  visibility  TEXT NOT NULL DEFAULT 'private' CHECK (visibility IN ('private','published')),
+  status      TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','pending_review','published')),
+
+  -- chemistry (JSONB — ดู type definitions ด้านบน)
+  chemical_format       TEXT NOT NULL,
+  film_compatibility    JSONB,
+  dilution              JSONB,    -- สำหรับ liquid_concentrate
+  chemicals             JSONB,    -- สำหรับ powder_raw/diy
+  mixing_steps          JSONB,
+  develop_timing        JSONB,    -- 1-bath: required; 2-bath: null
+  agitation             JSONB,    -- 1-bath: root-level; 2-bath: อยู่ใน develop_steps
+  baths                 JSONB,    -- 2-bath: required; 1-bath: null หรือ []
+  develop_steps         JSONB,    -- 2-bath: required (duration + agitation per step)
+  constraints           JSONB,    -- is_two_bath, reuse_compensation, required_fixer_type ฯลฯ
+  storage               JSONB,
+  is_two_bath           BOOLEAN NOT NULL DEFAULT FALSE, -- redundant column สำหรับ query ง่าย
+  base_volume_ml        INTEGER,
+  optimal_temp_min      NUMERIC,  -- ไม่ใช้ JSONB เพื่อ range query ได้
+  optimal_temp_max      NUMERIC,
+  tags                  TEXT[],
+  references            TEXT[],
+
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX recipes_step_type_idx    ON recipes (step_type);
+CREATE INDEX recipes_author_id_idx    ON recipes (author_id);
+CREATE INDEX recipes_visibility_idx   ON recipes (visibility);
+CREATE INDEX recipes_is_two_bath_idx  ON recipes (is_two_bath);
+CREATE INDEX recipes_tags_gin_idx     ON recipes USING GIN (tags);
+
+-- inventory_items
+CREATE TABLE inventory_items (
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id              UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name                 TEXT NOT NULL,
+  recipe_id            UUID NOT NULL REFERENCES recipes(id) ON DELETE RESTRICT,
+  recipe_snapshot      JSONB,            -- { name, step_type }
+  step_type            TEXT NOT NULL,
+  developer_bath_role  TEXT CHECK (developer_bath_role IN ('single','bath_a','bath_b')),
+  bath_id              TEXT,             -- Bath.id ใน recipe.baths[] JSONB
+  n_level              TEXT CHECK (n_level IN ('N-2','N-1','N','N+1','N+2')),
+  bottle_type          TEXT NOT NULL CHECK (bottle_type IN ('one-shot','reusable')),
+  mixed_date           DATE NOT NULL,
+  shelf_life_days      INTEGER,
+  use_count            INTEGER NOT NULL DEFAULT 0,
+  max_rolls            INTEGER,
+  status               TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','exhausted','expired')),
+  notes                TEXT,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX inventory_user_id_idx     ON inventory_items (user_id);
+CREATE INDEX inventory_recipe_id_idx   ON inventory_items (recipe_id);
+CREATE INDEX inventory_step_type_idx   ON inventory_items (step_type);
+CREATE INDEX inventory_status_idx      ON inventory_items (status);
+
+-- kits
+CREATE TABLE kits (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  description TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- kit_slots
+CREATE TABLE kit_slots (
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  kit_id               UUID NOT NULL REFERENCES kits(id) ON DELETE CASCADE,
+  slot_type            TEXT NOT NULL CHECK (slot_type IN ('developer','stop','fixer','wash_aid','wetting_agent')),
+  developer_slot_role  TEXT CHECK (developer_slot_role IN ('bath_a','bath_b')),
+  inventory_item_id    UUID REFERENCES inventory_items(id) ON DELETE SET NULL,
+  "order"              INTEGER NOT NULL,
+  optional             BOOLEAN NOT NULL DEFAULT FALSE,
+  notes                TEXT
+);
+
+CREATE INDEX kit_slots_kit_id_idx ON kit_slots (kit_id);
+
+-- dev_sessions
+CREATE TABLE dev_sessions (
+  id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id                   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  source_type               TEXT NOT NULL CHECK (source_type IN ('kit','recipes')),
+  kit_id                    UUID REFERENCES kits(id) ON DELETE SET NULL,
+  kit_name_snapshot         TEXT,
+  recipe_ids                UUID[],           -- สำหรับ anonymous session
+  film_format               TEXT NOT NULL CHECK (film_format IN ('35mm','120','4x5','other')),
+  rolls_count               INTEGER NOT NULL,
+  temperature_celsius       NUMERIC NOT NULL,
+  dev_type                  TEXT NOT NULL CHECK (dev_type IN ('N-2','N-1','N','N+1','N+2')),
+  agitation_method          TEXT NOT NULL CHECK (agitation_method IN ('inversion','rotation','stand','rotary')),
+  target_duration_seconds   INTEGER NOT NULL,
+  actual_duration_seconds   INTEGER,
+  inventory_updates         JSONB,            -- InventoryUpdate[]
+  status                    TEXT NOT NULL CHECK (status IN ('completed','abandoned')),
+  notes                     TEXT,
+  started_at                TIMESTAMPTZ NOT NULL,
+  completed_at              TIMESTAMPTZ,
+  created_at                TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX dev_sessions_user_id_idx ON dev_sessions (user_id);
+CREATE INDEX dev_sessions_kit_id_idx  ON dev_sessions (kit_id);
+CREATE INDEX dev_sessions_started_idx ON dev_sessions (started_at DESC);
+```
+
+### Key Design Decisions
+
+**ทำไม `is_two_bath` เป็น column แยก (ไม่ใช่แค่ใน JSONB)?**
+- ต้อง query `WHERE is_two_bath = true` บ่อยครั้ง (filter, UI, validation)
+- JSONB path lookup `constraints->>'is_two_bath'` ช้ากว่า boolean column และ index ไม่ดีเท่า
+
+**ทำไม `optimal_temp` แยก column (`optimal_temp_min/max`)?**
+- รองรับ range query ในอนาคต เช่น "หา recipe ที่ develop ได้ที่ 20°C"
+- เก็บเป็น JSONB ไม่ indexable สำหรับ range query
+
+**ทำไม `developer_bath_role` + `bath_id` อยู่บน inventory_items?**
+- ต้องการ filter ง่ายว่า item นี้เป็น bath_a หรือ bath_b โดยไม่ต้อง join recipe
+- `bath_id` เป็น TEXT (ไม่ใช่ UUID FK) เพราะ link ไปยัง id ภายใน JSONB ไม่ใช่ row จริง
+
+**2-Bath: `baths` JSONB vs normalized table?**
+- Bath data ถูกดึงทั้งก้อนพร้อม recipe เสมอ — ไม่เคย query bath เดี่ยวในฐานะ standalone entity
+- 2-bath recipes ใน production ไม่น่าจะมีเกิน ~20 ตัว (ไม่ใช่ข้อมูลที่ query บ่อยแบบ table)
+- JSONB ลด complexity ของ schema โดยไม่เสีย query performance ที่ต้องการ

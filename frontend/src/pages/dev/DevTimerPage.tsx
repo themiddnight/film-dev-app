@@ -35,19 +35,13 @@ function getTwoBathTimingSteps(recipe: Recipe): Array<{ name: string; seconds: n
 function getDeveloperDuration(recipe: Recipe, item: InventoryItem | null, tempCelsius: number, devType: 'N-2' | 'N-1' | 'N' | 'N+1' | 'N+2', agitationMethod: 'inversion' | 'rotation' | 'stand' | 'rotary'): number {
   if (recipe.constraints?.is_two_bath && (recipe.develop_steps?.length ?? 0) > 0) {
     const twoBathSteps = getTwoBathTimingSteps(recipe)
-    const baseTotal = twoBathSteps.reduce((sum, step) => sum + step.seconds, 0)
-    if (baseTotal <= 0) return 0
-
-    const adjustedTotal = applyAdjustments(baseTotal, recipe, agitationMethod, item?.use_count).seconds
-
-    if (item?.developer_bath_role === 'bath_a') {
-      return Math.round(adjustedTotal * (twoBathSteps[0]?.seconds ?? 0) / baseTotal)
-    }
+    // Bath B is always fixed — chemistry constraint: alkali activation time never changes with reuse
     if (item?.developer_bath_role === 'bath_b') {
-      return Math.round(adjustedTotal * (twoBathSteps[1]?.seconds ?? 0) / baseTotal)
+      return twoBathSteps[1]?.seconds ?? 0
     }
-
-    return adjustedTotal
+    // Bath A only: apply reuse compensation
+    const bathABase = twoBathSteps[0]?.seconds ?? 0
+    return applyAdjustments(bathABase, recipe, agitationMethod, item?.use_count).seconds
   }
 
   const base = getRecipeTimingSeconds(recipe, tempCelsius, devType)
@@ -82,10 +76,10 @@ export default function DevTimerPage() {
   // or by browser back while timer is paused (blocker fires, not running)
   const showExitModal = manualExitModal || (blocker.state === 'blocked' && !running)
 
-  // Silently block browser back when the timer is actively counting (not paused)
+  // When browser back is pressed while timer is running: pause and show confirmation modal
   useEffect(() => {
     if (blocker.state === 'blocked' && running) {
-      blocker.reset()
+      setRunning(false)  // pause — next render: running=false, blocker.state='blocked' → showExitModal=true
     }
   }, [blocker, running])
 
@@ -120,19 +114,16 @@ export default function DevTimerPage() {
         if (recipe) {
           if (recipe.constraints?.is_two_bath && (recipe.develop_steps?.length ?? 0) > 0) {
             const twoBathSteps = getTwoBathTimingSteps(recipe)
-            const baseTotal = twoBathSteps.reduce((sum, step) => sum + step.seconds, 0)
-            const adjustedTotal = applyAdjustments(baseTotal, recipe, agitation_method).seconds
-
+            // Two-bath: anonymous session has no use_count, and agitation multiplier is blocked
+            // for two-bath by applyAdjustments — use fixed step durations directly
             const bathATransitionWarning = twoBathSteps[0]?.transition_warning ?? 'Do not rinse — pour Bath B immediately'
 
             twoBathSteps.forEach((step, index) => {
               const isBathB = index === 1
-              const durationSeconds = Math.round(adjustedTotal * step.seconds / baseTotal)
-
               built.push({
                 id: `${recipe.id}-${index}`,
                 name: step.name,
-                durationSeconds,
+                durationSeconds: step.seconds,
                 agitation: step.agitation,
                 warnings: step.warnings,
                 transitionWarning: isBathB ? bathATransitionWarning : undefined,

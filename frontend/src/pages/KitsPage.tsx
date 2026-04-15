@@ -235,6 +235,16 @@ export default function KitsPage() {
       errors.push('Pyro developer requires alkaline fixer (TF-4/TF-5)')
     }
 
+    const bathASlot = draftKit.slots.find((s) => s.developer_slot_role === 'bath_a')
+    const bathBSlot = draftKit.slots.find((s) => s.developer_slot_role === 'bath_b')
+    if (bathASlot?.inventory_item_id && bathBSlot?.inventory_item_id) {
+      const bathAItem = itemById.get(bathASlot.inventory_item_id)
+      const bathBItem = itemById.get(bathBSlot.inventory_item_id)
+      if (bathAItem && bathBItem && bathAItem.recipe_id !== bathBItem.recipe_id) {
+        errors.push('Bath A and Bath B must be from the same two-bath recipe')
+      }
+    }
+
     return errors
   }, [draftKit, items, recipeById, itemById])
 
@@ -262,7 +272,11 @@ export default function KitsPage() {
     if (!editingItem || !editingItem.name.trim()) return
 
     const now = new Date().toISOString()
-    const recipeName = recipeById.get(editingItem.recipe_id)?.name || 'Unknown recipe'
+    const recipe = recipeById.get(editingItem.recipe_id)
+    const recipeName = recipe?.name || 'Unknown recipe'
+    const bath_id = editingItem.step_type === 'developer' && editingItem.developer_bath_role !== 'single'
+      ? recipe?.baths?.find((b) => b.developer_bath_role === editingItem.developer_bath_role)?.id
+      : undefined
 
     await saveInventory({
       id: editingItem.id ?? crypto.randomUUID(),
@@ -274,6 +288,7 @@ export default function KitsPage() {
       },
       step_type: editingItem.step_type,
       developer_bath_role: editingItem.step_type === 'developer' ? editingItem.developer_bath_role : undefined,
+      bath_id,
       bottle_type: editingItem.bottle_type,
       mixed_date: editingItem.mixed_date,
       shelf_life_days: editingItem.shelf_life_days ? Number(editingItem.shelf_life_days) : undefined,
@@ -731,7 +746,14 @@ export default function KitsPage() {
                   if (slot.slot_type !== 'developer') return true
 
                   if (slot.developer_slot_role === 'bath_a') return item.developer_bath_role === 'bath_a'
-                  if (slot.developer_slot_role === 'bath_b') return item.developer_bath_role === 'bath_b'
+                  if (slot.developer_slot_role === 'bath_b') {
+                    if (item.developer_bath_role !== 'bath_b') return false
+                    // Only show Bath B bottles from the same recipe as the selected Bath A
+                    const bathASlot = draftKit.slots.find((s) => s.developer_slot_role === 'bath_a')
+                    const bathAItem = bathASlot?.inventory_item_id ? items.find((i) => i.id === bathASlot.inventory_item_id) : null
+                    if (bathAItem) return item.recipe_id === bathAItem.recipe_id
+                    return true
+                  }
 
                   // Initial developer slot (before two-bath split): allow any developer bottle.
                   return true

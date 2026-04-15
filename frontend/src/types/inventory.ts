@@ -12,6 +12,7 @@ export type InventoryItem = {
   }
   step_type: RecipeStepType
   developer_bath_role?: DeveloperBathRole
+  bath_id?: string           // FK → Bath.id ใน recipe.baths[] JSONB — two-bath only
   n_level?: PushPull
   bottle_type: 'one-shot' | 'reusable'
   mixed_date: string

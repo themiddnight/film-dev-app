@@ -143,6 +143,16 @@ export default function DevSetupPage() {
 
   const adjusted = useMemo(() => {
     if (!developerRecipe) return { seconds: 0 as number, compensationPct: undefined as number | undefined }
+    if (developerRecipe.constraints?.is_two_bath) {
+      // Two-bath: only Bath A is compensated; Bath B duration is always fixed
+      const devSteps = (developerRecipe.develop_steps ?? []).filter(
+        (s) => s.type === 'developer' || s.type === 'activator',
+      )
+      const bathABase = typeof devSteps[0]?.duration_seconds === 'number' ? devSteps[0].duration_seconds : 0
+      const bathBFixed = typeof devSteps[1]?.duration_seconds === 'number' ? devSteps[1].duration_seconds : 0
+      const bathAResult = applyAdjustments(bathABase, developerRecipe, agitation_method, developerInventory?.use_count)
+      return { seconds: bathAResult.seconds + bathBFixed, compensationPct: bathAResult.compensationPct }
+    }
     return applyAdjustments(baseSeconds, developerRecipe, agitation_method, developerInventory?.use_count)
   }, [developerRecipe, baseSeconds, agitation_method, developerInventory?.use_count])
 
@@ -153,6 +163,15 @@ export default function DevSetupPage() {
   }
 
   const isTwoBath = !!(developerRecipe?.constraints?.is_two_bath)
+
+  const tempWarning = useMemo(() => {
+    if (!developerRecipe?.optimal_temp || isTwoBath) return null
+    const { min, max } = developerRecipe.optimal_temp
+    if (temperature_celsius < min || temperature_celsius > max) {
+      return `${temperature_celsius}°C is outside the recommended range (${min}–${max}°C)`
+    }
+    return null
+  }, [developerRecipe, temperature_celsius, isTwoBath])
 
   useEffect(() => {
     if (isTwoBath && dev_type !== 'N') {
@@ -317,6 +336,9 @@ export default function DevSetupPage() {
                 <p><span className="font-semibold">Adjusted time:</span> {format(adjusted.seconds)}</p>
                 {adjusted.compensationPct !== undefined && (
                   <p className="text-warning">Reusable compensation +{adjusted.compensationPct}%</p>
+                )}
+                {tempWarning && (
+                  <p className="text-warning">⚠ {tempWarning}</p>
                 )}
               </div>
             </div>
