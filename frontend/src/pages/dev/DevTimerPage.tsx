@@ -114,8 +114,10 @@ export default function DevTimerPage() {
         if (recipe) {
           if (recipe.constraints?.is_two_bath && (recipe.develop_steps?.length ?? 0) > 0) {
             const twoBathSteps = getTwoBathTimingSteps(recipe)
-            // Two-bath: anonymous session has no use_count, and agitation multiplier is blocked
-            // for two-bath by applyAdjustments — use fixed step durations directly
+            // Two-bath anonymous session: no inventory item → no use_count, no Bath A compensation.
+            // Agitation multiplier is also blocked for two-bath in applyAdjustments.
+            // Both steps use fixed durations from develop_steps directly.
+            // TODO: if recipe source ever gains inventory lookup, apply compensation to Bath A only here.
 
             twoBathSteps.forEach((step, index) => {
               const isLast = index === twoBathSteps.length - 1
@@ -480,7 +482,7 @@ export default function DevTimerPage() {
         }}
         onCancel={() => {
           setManualExitModal(false)
-          if (blocker.state === 'blocked') blocker.reset() // restore blocker for next back attempt
+          if (blocker.state === 'blocked') blocker.reset() // cancel this navigation attempt; blocker condition (phase==='running') remains active
         }}
       />
     </div>

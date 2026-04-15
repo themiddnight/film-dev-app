@@ -277,6 +277,9 @@ export default function KitsPage() {
     const bath_id = editingItem.step_type === 'developer' && editingItem.developer_bath_role !== 'single'
       ? recipe?.baths?.find((b) => b.developer_bath_role === editingItem.developer_bath_role)?.id
       : undefined
+    if (import.meta.env.DEV && editingItem.step_type === 'developer' && (editingItem.developer_bath_role === 'bath_a' || editingItem.developer_bath_role === 'bath_b') && bath_id === undefined) {
+      console.warn(`[KitsPage] bath_id lookup failed: recipe '${editingItem.recipe_id}' has no bath with developer_bath_role='${editingItem.developer_bath_role}'. Check recipe.baths[].`)
+    }
 
     await saveInventory({
       id: editingItem.id ?? crypto.randomUUID(),
