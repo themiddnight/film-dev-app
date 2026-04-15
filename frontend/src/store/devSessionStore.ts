@@ -7,6 +7,28 @@ type DevSource =
   | { type: 'kit'; kit_id: string }
   | { type: 'recipe'; recipe_id: string }
 
+type LegacyDevSource =
+  | { type: 'kit'; kitId: string }
+  | { type: 'recipe'; recipeId: string }
+
+type PersistedDevSessionState = Partial<Pick<DevSessionStore,
+  'source' | 'film_format' | 'rolls_count' | 'temperature_celsius' | 'dev_type' | 'agitation_method'
+>> & {
+  source?: DevSource | LegacyDevSource | null
+}
+
+function migrateSource(source: PersistedDevSessionState['source']): DevSource | null {
+  if (!source) return null
+  if (source.type === 'kit') {
+    if ('kit_id' in source) return source
+    const legacySource = source as Extract<LegacyDevSource, { type: 'kit' }>
+    return { type: 'kit', kit_id: legacySource.kitId }
+  }
+  if ('recipe_id' in source) return source
+  const legacySource = source as Extract<LegacyDevSource, { type: 'recipe' }>
+  return { type: 'recipe', recipe_id: legacySource.recipeId }
+}
+
 type DevSessionStore = {
   source: DevSource | null
   film_format: DevSession['film_format']
@@ -98,6 +120,14 @@ export const useDevSessionStore = create<DevSessionStore>()(
     }),
     {
       name: 'dev-session',
+      version: 1,
+      migrate: (persistedState) => {
+        const state = (persistedState ?? {}) as PersistedDevSessionState
+        return {
+          ...state,
+          source: migrateSource(state.source),
+        }
+      },
       partialize: (s) => ({
         source: s.source,
         film_format: s.film_format,

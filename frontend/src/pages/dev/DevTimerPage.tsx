@@ -116,17 +116,16 @@ export default function DevTimerPage() {
             const twoBathSteps = getTwoBathTimingSteps(recipe)
             // Two-bath: anonymous session has no use_count, and agitation multiplier is blocked
             // for two-bath by applyAdjustments — use fixed step durations directly
-            const bathATransitionWarning = twoBathSteps[0]?.transition_warning ?? 'Do not rinse — pour Bath B immediately'
 
             twoBathSteps.forEach((step, index) => {
-              const isBathB = index === 1
+              const isLast = index === twoBathSteps.length - 1
               built.push({
                 id: `${recipe.id}-${index}`,
                 name: step.name,
                 durationSeconds: step.seconds,
                 agitation: step.agitation,
                 warnings: step.warnings,
-                transitionWarning: isBathB ? bathATransitionWarning : undefined,
+                transitionWarning: !isLast ? (step.transition_warning ?? 'Do not rinse — pour Bath B immediately') : undefined,
               })
             })
           } else {
@@ -185,9 +184,9 @@ export default function DevTimerPage() {
             duration = 60
           }
 
-          const prev = i > 0 ? slotItems[i - 1] : null
-          const prevIsBathA = prev?.item?.step_type === 'developer' && prev?.item?.developer_bath_role === 'bath_a'
-          const transitionWarning = item.step_type === 'developer' && item.developer_bath_role === 'bath_b' && prevIsBathA
+          const next = slotItems[i + 1]
+          const nextIsBathB = next?.item?.step_type === 'developer' && next.item?.developer_bath_role === 'bath_b'
+          const transitionWarning = item.step_type === 'developer' && item.developer_bath_role === 'bath_a' && nextIsBathB
             ? (getTwoBathTimingSteps(recipe)[0]?.transition_warning ?? 'Do not rinse — pour Bath B immediately')
             : undefined
 

@@ -69,6 +69,10 @@ export function buildInventoryUpdates(
   return inventoryItems.map((item) => ({
     inventory_item_id: item.id,
     rolls_added: rolls,
-    time_compensation_pct: compensationPct,
+    ...(compensationPct !== undefined
+      && item.step_type === 'developer'
+      && item.developer_bath_role !== 'bath_b'
+      ? { time_compensation_pct: compensationPct }
+      : {}),
   }))
 }
