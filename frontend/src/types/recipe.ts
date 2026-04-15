@@ -170,12 +170,11 @@ export type Recipe = {
   id: string
   name: string
   description: string
-  author: { id: string; name: string }
-  visibility: 'public' | 'private' | 'published'
+  author?: { id: string; name: string }  // V1 legacy — prefer author_id + author_type
+  visibility: 'private' | 'published'
   tags: string[]
   film_types?: string[]
   base_volume_ml?: number
-  optimal_temp_range?: { min: number; max: number }
   references?: string[]
   baths?: Bath[]
   develop_steps?: DevelopStep[]

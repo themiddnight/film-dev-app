@@ -9,8 +9,21 @@ import { systemRecipes } from '../../data/systemRecipes'
 
 const RECIPES_KEY = 'recipes'
 
+type LegacyRecipe = Omit<Recipe, 'visibility'> & {
+  optimal_temp_range?: { min: number; max: number }
+  visibility?: Recipe['visibility'] | 'public'
+}
+
 function asText(value: string | undefined): string {
   return (value ?? '').toLowerCase()
+}
+
+function normalizeLoadedRecipe(recipe: LegacyRecipe): Recipe {
+  return {
+    ...recipe,
+    visibility: recipe.visibility === 'public' ? 'published' : (recipe.visibility ?? 'private'),
+    optimal_temp: recipe.optimal_temp ?? recipe.optimal_temp_range,
+  }
 }
 
 export class LocalRecipeRepository implements RecipeRepository {
@@ -18,7 +31,7 @@ export class LocalRecipeRepository implements RecipeRepository {
     try {
       const raw = localStorage.getItem(RECIPES_KEY)
       if (!raw) return []
-      return JSON.parse(raw) as Recipe[]
+      return (JSON.parse(raw) as LegacyRecipe[]).map(normalizeLoadedRecipe)
     } catch {
       return []
     }
@@ -83,7 +96,7 @@ export class LocalRecipeRepository implements RecipeRepository {
       tags: recipe.tags ?? [],
       film_types: recipe.film_types ?? ['any'],
       base_volume_ml: recipe.base_volume_ml ?? 1000,
-      optimal_temp_range: recipe.optimal_temp_range ?? recipe.optimal_temp ?? { min: 20, max: 24 },
+      optimal_temp: recipe.optimal_temp ?? { min: 20, max: 24 },
       baths: recipe.baths ?? [],
       develop_steps: recipe.develop_steps ?? [],
       author_type: recipe.author_type ?? 'personal',

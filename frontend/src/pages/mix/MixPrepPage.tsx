@@ -1,6 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
+import ConfirmLeaveModal from '../../components/ConfirmLeaveModal'
 import { useRecipes } from '../../hooks/useRecipes'
 import { useMixingStore } from '../../store/mixingStore'
 import { formatScaledChemicalText } from '../../utils/mixInstruction'
@@ -8,6 +9,7 @@ import { getChemicalsForSelection, isTwoBathRecipe } from '../../utils/twoBath'
 
 export default function MixPrepPage() {
   const navigate = useNavigate()
+  const [showLeaveModal, setShowLeaveModal] = useState(false)
   const { selectedRecipeIds, checkedMap, toggleChecked, twoBathSelections, twoBathNLevels, targetVolumeMl } = useMixingStore()
   const { recipes } = useRecipes({})
 
@@ -26,7 +28,14 @@ export default function MixPrepPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Navbar title="Prepare Ingredients" subtitle="Phase 1" onBack={() => navigate('/mix/summary')} />
+      <Navbar
+        title="Prepare Ingredients"
+        subtitle="Phase 1"
+        onBack={() => {
+          if (checkedCount >= 1) setShowLeaveModal(true)
+          else navigate('/mix/summary')
+        }}
+      />
 
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         <div className="card bg-base-200">
@@ -95,6 +104,16 @@ export default function MixPrepPage() {
           Continue to Mix
         </button>
       </div>
+
+      <ConfirmLeaveModal
+        open={showLeaveModal}
+        title="Leave preparation?"
+        message="You've checked off some ingredients. Going back will not clear your progress."
+        confirmLabel="Leave"
+        cancelLabel="Stay"
+        onConfirm={() => { setShowLeaveModal(false); navigate('/mix/summary') }}
+        onCancel={() => setShowLeaveModal(false)}
+      />
     </div>
   )
 }

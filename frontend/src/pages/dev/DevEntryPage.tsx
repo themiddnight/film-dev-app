@@ -33,12 +33,12 @@ export default function DevEntryPage() {
   }, [kits, items])
 
   function chooseKit(kitId: string) {
-    setSource({ type: 'kit', kitId })
+    setSource({ type: 'kit', kit_id: kitId })
     navigate('/dev/setup')
   }
 
   function chooseRecipe(recipeId: string) {
-    setSource({ type: 'recipe', recipeId })
+    setSource({ type: 'recipe', recipe_id: recipeId })
     navigate('/dev/setup')
   }
 

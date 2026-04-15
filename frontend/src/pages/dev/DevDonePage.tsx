@@ -19,6 +19,7 @@ export default function DevDonePage() {
     target_duration_seconds,
     started_at,
     selected_bath_b_item_id,
+    compensation_pct,
     completeTimerSession,
     toSessionSource,
     resetRuntime,
@@ -47,7 +48,7 @@ export default function DevDonePage() {
       let recipeName = '-'
 
       if (resolvedSource.type === 'kit') {
-        const kit = await kitRepo.getById(resolvedSource.kitId)
+        const kit = await kitRepo.getById(resolvedSource.kit_id)
         sourceNameRef.current = kit?.name ?? 'Kit'
         const ids = [...new Set(kit?.slots.map((s) => s.inventory_item_id).filter((id): id is string => !!id) ?? [])]
         const allItems = await inventoryRepo.getAll()
@@ -79,11 +80,11 @@ export default function DevDonePage() {
           recipeName = recipe?.name ?? recipeName
         }
       } else {
-        const recipe = await recipeRepo.getById(resolvedSource.recipeId)
+        const recipe = await recipeRepo.getById(resolvedSource.recipe_id)
         recipeName = recipe?.name ?? recipeName
       }
 
-      const updates = resolvedSource.type === 'kit' ? buildInventoryUpdates(usedInventory, rolls_count) : []
+      const updates = resolvedSource.type === 'kit' ? buildInventoryUpdates(usedInventory, rolls_count, compensation_pct) : []
       completeTimerSession(updates)
 
       const sessionSource = toSessionSource(sourceNameRef.current)

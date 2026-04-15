@@ -42,7 +42,8 @@ export function applyAdjustments(
   let compensationPct: number | undefined
 
   const multipliers = recipe.constraints?.agitation_time_multipliers
-  if (multipliers) {
+  // Two-bath recipes use fixed durations from develop_steps — no multiplier applies
+  if (multipliers && !recipe.constraints?.is_two_bath) {
     if (agitationMethod === 'inversion' && multipliers.inversion) seconds = Math.round(seconds * multipliers.inversion)
     if ((agitationMethod === 'rotary' || agitationMethod === 'rotation') && multipliers.rotary) {
       seconds = Math.round(seconds * multipliers.rotary)
@@ -68,6 +69,10 @@ export function buildInventoryUpdates(
   return inventoryItems.map((item) => ({
     inventory_item_id: item.id,
     rolls_added: rolls,
-    time_compensation_pct: compensationPct,
+    ...(compensationPct !== undefined
+      && item.step_type === 'developer'
+      && item.developer_bath_role !== 'bath_b'
+      ? { time_compensation_pct: compensationPct }
+      : {}),
   }))
 }

@@ -9,7 +9,6 @@ function withRecipeDefaults(recipe: Partial<Recipe> & Pick<Recipe, 'id' | 'name'
     tags: [],
     film_types: ['any'],
     base_volume_ml: 1000,
-    optimal_temp_range: { min: 20, max: 24 },
     baths: [],
     develop_steps: [],
     ...recipe,
@@ -26,10 +25,12 @@ export const systemRecipes: Recipe[] = [
     film_compatibility: { scope: 'general' },
     chemical_format: 'liquid_concentrate',
     dilution: {
-      type: 'fixed',
-      concentrate_parts: 1,
-      water_parts: 50,
-      label: '1+50',
+      type: 'open',
+      suggested_ratios: [
+        { label: '1+25', concentrate_parts: 1, water_parts: 25 },
+        { label: '1+50', concentrate_parts: 1, water_parts: 50 },
+        { label: '1+100', concentrate_parts: 1, water_parts: 100 },
+      ],
     },
     base_volume_ml: 1000,
     optimal_temp: { min: 20, max: 24 },
@@ -309,6 +310,7 @@ export const systemRecipes: Recipe[] = [
       is_two_bath: true,
       reuse_compensation: {
         max_rolls: 15,
+        time_increase_per_roll: 0.05,
         notes: 'Bath A: many reuses. Bath B: change after 15 rolls or reuse 5-10 times.',
       },
     },
