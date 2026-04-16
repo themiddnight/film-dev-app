@@ -199,12 +199,17 @@ export default function DevTimerPage() {
           let duration = 60
           if (item.step_type === 'developer') {
             duration = getDeveloperDuration(recipe, item, temperature_celsius, dev_type, agitation_method)
-          } else if (item.step_type === 'fixer') {
-            duration = 480
-          } else if (item.step_type === 'wash_aid') {
-            duration = 120
-          } else if (item.step_type === 'wetting_agent') {
-            duration = 60
+          } else {
+            const recipeDuration = getRecipeTimingSeconds(recipe, temperature_celsius, dev_type)
+            if (recipeDuration > 0) {
+              duration = recipeDuration
+            } else if (item.step_type === 'fixer') {
+              duration = 480
+            } else if (item.step_type === 'wash_aid') {
+              duration = 120
+            } else if (item.step_type === 'wetting_agent') {
+              duration = 60
+            }
           }
 
           const next = slotItems[i + 1]
@@ -269,7 +274,7 @@ export default function DevTimerPage() {
   const isAgitationTime = useMemo(() => {
     if (!currentStep?.agitation || phase !== 'running') return false
     const elapsed = currentStep.durationSeconds - remaining
-    if (elapsed <= 0) return false
+    if (elapsed < 0) return false
     const agi = currentStep.agitation
     return elapsed <= agi.initial_seconds || ((elapsed - agi.initial_seconds) % agi.interval_seconds < agi.duration_seconds)
   }, [currentStep, remaining, phase])
@@ -387,7 +392,7 @@ export default function DevTimerPage() {
         <progress className="progress progress-primary w-full h-1 rounded-none" value={overallProgress} max={1} />
       )}
 
-      {phase === 'ready' && currentStep.transitionWarning && (
+      {(phase === 'ready' || (phase === 'running' && remaining === 0)) && currentStep.transitionWarning && (
         <div className="alert alert-error mx-4 mt-3 py-3 px-4">
           <span className="font-semibold text-sm">⚠ {currentStep.transitionWarning}</span>
         </div>

@@ -148,6 +148,7 @@ export const systemRecipes: Recipe[] = [
         time_increase_per_roll: 0.1,
       },
     },
+    shelf_life_days: 180,
     storage: {
       shelf_life: '6 months for stock solution',
       container: 'Dark airtight bottle',
@@ -173,6 +174,8 @@ export const systemRecipes: Recipe[] = [
       water_parts: 19,
       label: '1+19',
     },
+    develop_timing: { type: 'fixed', fixed_seconds: 60 },
+    shelf_life_days: 7,
     storage: {
       shelf_life: 'Working solution: up to 1 week',
       container: 'Sealed bottle',
@@ -201,6 +204,8 @@ export const systemRecipes: Recipe[] = [
     constraints: {
       fixer_grade: 'film',
     },
+    develop_timing: { type: 'fixed', fixed_seconds: 240 },
+    shelf_life_days: 60,
     storage: {
       shelf_life: 'Working solution: 1-2 months',
       container: 'Tightly capped bottle',
@@ -249,6 +254,7 @@ export const systemRecipes: Recipe[] = [
           { name: 'Metol', amount_per_liter: 6.5, unit: 'g', order: 1 },
           { name: 'Sodium Sulphite (anhydrous)', amount_per_liter: 80, unit: 'g', order: 2 },
         ],
+        shelf_life_days: 180,
         storage: {
           shelf_life: 'Several months in airtight container',
           container: 'Dark glass bottle, tightly sealed',
@@ -269,6 +275,7 @@ export const systemRecipes: Recipe[] = [
           'N':   { chemicals: [{ name: 'Sodium Metaborate (Kodalk)', amount_per_liter: 12, unit: 'g', order: 1 }] },
           'N+1': { chemicals: [{ name: 'Sodium Metaborate (Kodalk)', amount_per_liter: 15, unit: 'g', order: 1 }] },
         },
+        shelf_life_days: 60,
         storage: {
           shelf_life: '1-2 months',
           container: 'Dark glass bottle, tightly sealed',
