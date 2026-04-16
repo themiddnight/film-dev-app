@@ -189,7 +189,7 @@ export default function DevSetupPage() {
     <div className="flex flex-col h-full">
       <Navbar title="Session Setup" onBack={() => navigate('/dev')} />
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-28 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-4 space-y-4">
         {loading && <p className="text-sm text-sub">Loading setup...</p>}
 
         {!loading && !developerRecipe && (

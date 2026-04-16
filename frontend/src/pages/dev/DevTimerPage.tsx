@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useBlocker, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Bell, Pause, Play } from 'lucide-react'
 import Navbar from '../../components/Navbar'
 import ConfirmLeaveModal from '../../components/ConfirmLeaveModal'
@@ -69,21 +69,42 @@ export default function DevTimerPage() {
   const prevAgitationRef = useRef(false)
   const flashIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Block browser back gesture while timer phase is active (running or paused)
-  const blocker = useBlocker(useCallback(() => phase === 'running', [phase]))
+  // Sentinel ref — tracks whether we've pushed a blocking history entry
+  const sentinelRef = useRef(false)
+  // Mirror running state into a ref so the popstate handler always sees the latest value
+  const runningRef = useRef(running)
+  useEffect(() => { runningRef.current = running }, [running])
 
-  // Derive modal visibility: triggered by the manual "exit session" button,
-  // or by browser back while timer is paused (blocker fires, not running)
-  const showExitModal = manualExitModal || (blocker.state === 'blocked' && !running)
-
-  // When browser back is pressed while timer is running: pause and show confirmation modal
+  // Push a sentinel history entry when the timer phase is active so the back
+  // button can be intercepted. Remove the flag when the phase ends.
   useEffect(() => {
-    if (blocker.state === 'blocked' && running) {
-      setRunning(false)  // pause — next render: running=false, blocker.state='blocked' → showExitModal=true
+    if (phase === 'running' && !sentinelRef.current) {
+      window.history.pushState({ timerSentinel: true }, '')
+      sentinelRef.current = true
     }
-  }, [blocker, running])
+    if (phase !== 'running') {
+      sentinelRef.current = false
+    }
+  }, [phase])
 
-  // Navigate home after phase has been cleared (avoids re-triggering the blocker)
+  // Intercept the back-button popstate while the sentinel is active
+  useEffect(() => {
+    const handlePopState = () => {
+      if (!sentinelRef.current) return
+      // Re-push sentinel to keep blocking in place
+      window.history.pushState({ timerSentinel: true }, '')
+      if (runningRef.current) {
+        setRunning(false) // pause, modal will appear on next render
+      }
+      setManualExitModal(true)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  const showExitModal = manualExitModal
+
+  // Navigate home after phase has been cleared
   useEffect(() => {
     if (pendingNavigateHome) {
       navigate('/dev')
@@ -475,14 +496,14 @@ export default function DevTimerPage() {
         danger
         onConfirm={() => {
           setManualExitModal(false)
-          setPhase('ready')   // disable blocker condition
+          sentinelRef.current = false
+          setPhase('ready')
           setRunning(false)
-          if (blocker.state === 'blocked') blocker.reset()
           setPendingNavigateHome(true)
         }}
         onCancel={() => {
           setManualExitModal(false)
-          if (blocker.state === 'blocked') blocker.reset() // cancel this navigation attempt; blocker condition (phase==='running') remains active
+          // sentinel is still in history — back button remains blocked
         }}
       />
     </div>
