@@ -1,0 +1,35 @@
+{
+  "skill_name": "bw-film-dev",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "กำลังจะล้างฟิล์ม HP5 Plus 400 ด้วย Divided D-23 อยากรู้ว่าต้องทำยังไงบ้าง โดยเฉพาะเรื่อง Bath A กับ Bath B ต้องล้างน้ำระหว่างสองขั้นนี้ไหม? แล้วเวลาเท่าไหร่?",
+      "expected_output": "อธิบาย two-bath procedure ครบถ้วน รวมถึงการห้ามล้างน้ำระหว่าง Bath A → Bath B (พร้อมอธิบาย mechanism ว่าทำไม), เวลา Bath A 5 นาที Bath B 5 นาที, agitation ที่ต่างกันระหว่าง Bath A (vigorous) และ Bath B (minimal), และ temperature latitude ที่กว้างกว่า one-bath",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "ล้างฟิล์มเสร็จแล้วแต่มีน้ำยา fixer ค้างอยู่ขวดนึง อยากรู้ว่า Ilford Rapid Fixer กับ fixer สำหรับกระดาษ ใช้แทนกันได้ไหม? มีร้านขายแต่ paper fixer อยู่",
+      "expected_output": "ตอบชัดว่าใช้แทนกันไม่ได้ อธิบาย mechanism ว่าทำไม (silver halide density ต่างกัน ~5×, paper fixer สลาย silver iodide complex ไม่สมบูรณ์ → residual silver → yellowing ระยะยาว) และแนะนำทางเลือกที่ถูกต้อง",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "อยากจะ push HP5 สองสต็อปด้วย HC-110 Dilution B ที่อุณหภูมิ 20°C ปกติใช้เวลา 5 นาที ต้องใช้เวลาเท่าไหร่ตอน push?",
+      "expected_output": "คำนวณ push +2 stops: +25-30% ต่อ stop → ~5 นาที × 1.28 (ประมาณ) × 1.28 ≈ 8 นาที (หรือประมาณ 8–9 นาที) อธิบาย mechanism ว่า push เพิ่มเวลาเพื่อ extend development ให้ shadow เพิ่ม density พร้อมบอก trade-off: grain ใหญ่ขึ้น, contrast เพิ่ม, shadow detail ลด",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "กำลัง implement reuse compensation สำหรับ two-bath developer ใน codebase นี้ Bath A ใช้ไปแล้ว 3 rolls มี time_increase_per_roll = 0.15 base time = 300 seconds ต้องคำนวณ Bath A ยังไง? แล้ว Bath B ล่ะ?",
+      "expected_output": "Bath A: 300 × (1 + 0.15 × 3) = 300 × 1.45 = 435 seconds. Bath B ไม่เปลี่ยน — duration ตายตัวตาม develop_steps[].duration_seconds เสมอ เพราะ Bath B เป็น alkali solution ที่ไม่ deplete เหมือน developer, chemistry ของ two-bath ทำงานผ่าน carryover developer ไม่ใช่เวลา Bath B",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "ล้างฟิล์มออกมาแล้วมีจุดสีขาวกลมๆ กระจายทั่ว เหมือนหยดน้ำ เจ็บปวดมาก ทำยังไงดี? แล้วป้องกันอนาคตยังไง?",
+      "expected_output": "Diagnose ว่าเป็น water spots จาก mineral deposit (hard water) อธิบาย mechanism น้ำกระด้าง บอกว่าฟิล์มที่เสียไปแล้วช่วยได้ยาก (อาจลอง distilled water rewash ถ้ายังไม่นานเกิน) และให้ prevention guide ที่ชัดเจน: distilled water final rinse + Photo-Flo dilution ที่ถูกต้อง",
+      "files": []
+    }
+  ]
+}

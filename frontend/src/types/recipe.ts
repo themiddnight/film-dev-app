@@ -122,6 +122,7 @@ export type Bath = {
   chemicals?: Chemical[]
   mixing_steps?: MixingStep[]
   dilution_ratio?: string   // for liquid_concentrate only, e.g., "1:31"
+  shelf_life_days?: number
   storage?: {
     shelf_life: string
     container: string
@@ -191,6 +192,7 @@ export type Recipe = {
   develop_timing?: DevelopTiming
   agitation?: AgitationSpec
   storage?: StorageInfo
+  shelf_life_days?: number
   constraints?: RecipeConstraints
   author_id?: string
   author_type?: 'system' | 'personal' | 'community'

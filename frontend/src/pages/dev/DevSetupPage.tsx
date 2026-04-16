@@ -290,20 +290,24 @@ export default function DevSetupPage() {
 
             <div>
               <label className="text-xs text-sub block mb-1">Agitation</label>
-              <select
-                className="select select-bordered w-full"
-                value={agitation_method}
-                onChange={(e) =>
-                  setConfig({
-                    agitation_method: e.target.value as 'inversion' | 'rotation' | 'stand' | 'rotary',
-                  })
-                }
-              >
-                <option value="inversion">inversion</option>
-                <option value="rotation">rotation</option>
-                <option value="rotary">rotary</option>
-                <option value="stand">stand</option>
-              </select>
+              {isTwoBath ? (
+                <p className="text-xs text-sub pt-2">Defined per recipe — fixed for two-bath developer</p>
+              ) : (
+                <select
+                  className="select select-bordered w-full"
+                  value={agitation_method}
+                  onChange={(e) =>
+                    setConfig({
+                      agitation_method: e.target.value as 'inversion' | 'rotation' | 'stand' | 'rotary',
+                    })
+                  }
+                >
+                  <option value="inversion">inversion</option>
+                  <option value="rotation">rotation</option>
+                  <option value="rotary">rotary</option>
+                  <option value="stand">stand</option>
+                </select>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
