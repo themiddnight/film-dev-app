@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Edit2, Layers, Package, Plus, Search, Trash2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import BottomSheet from '../components/BottomSheet'
@@ -181,6 +182,7 @@ function isAlkalineFixer(recipe: Recipe | null): boolean {
 }
 
 export default function KitsPage() {
+  const navigate = useNavigate()
 
   const [query, setQuery] = useState('')
   const [stepType, setStepType] = useState<'all' | RecipeStepType>('all')
@@ -341,7 +343,8 @@ export default function KitsPage() {
       <Navbar
         title="My Kit"
         subtitle="Inventory + kits"
-        showBack={false}
+        showBack={true}
+        onBack={() => navigate('/home')}
         left={<Package size={18} className="text-sub" />}
       />
 

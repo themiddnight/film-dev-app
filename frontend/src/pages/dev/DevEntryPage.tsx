@@ -44,7 +44,7 @@ export default function DevEntryPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Navbar title="Dev" subtitle="Choose entry point" showBack={false} left={<Timer size={18} className="text-sub" />} />
+      <Navbar title="Dev" subtitle="Choose entry point" showBack={true} onBack={() => navigate('/home')} left={<Timer size={18} className="text-sub" />} />
 
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
         <section>

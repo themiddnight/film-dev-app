@@ -4,6 +4,7 @@ import { useSettingsStore } from "./store/settingsStore";
 import { useEffect } from "react";
 
 // Pages
+import HomePage from "./pages/HomePage";
 import RecipesPage from "./pages/RecipesPage";
 import RecipeDetailPage from "./pages/RecipeDetailPage";
 import CreateRecipeFullPage from "./pages/CreateRecipeFullPage";
@@ -38,11 +39,12 @@ export default function App() {
   return (
     // max-width layout — mobile-first, centered on larger screens
     <div className="h-dvh flex justify-center bg-base-200">
-      <div className="w-full max-w-275 h-dvh bg-base-100 relative overflow-hidden flex flex-col">
+      <div className="w-full h-dvh bg-base-100 relative overflow-hidden flex flex-col">
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<MainLayout />}>
-              <Route index element={<Navigate to="dev" replace />} />
+              <Route index element={<Navigate to="home" replace />} />
+              <Route path="home" element={<HomePage />} />
               <Route path="dev" element={<DevEntryPage />} />
               <Route path="dev/setup" element={<DevSetupPage />} />
               <Route path="dev/timer" element={<DevTimerPage />} />
