@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Navbar from '../../components/Navbar'
-import ConfirmLeaveModal from '../../components/ConfirmLeaveModal'
-import { useRecipes } from '../../hooks/useRecipes'
-import { useMixingStore } from '../../store/mixingStore'
-import { formatMixInstruction } from '../../utils/mixInstruction'
-import { getMixingStepsForSelection, isTwoBathRecipe } from '../../utils/twoBath'
+import Navbar from '@/components/Navbar'
+import ConfirmLeaveModal from '@/components/ConfirmLeaveModal'
+import { useRecipes } from '@/hooks/useRecipes'
+import { useMixingStore } from '@/store/mixingStore'
+import { formatMixInstruction } from '@/utils/mixInstruction'
+import { getMixingStepsForSelection, isTwoBathRecipe } from '@/utils/twoBath'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function MixMixPage() {
   const navigate = useNavigate()
@@ -18,7 +19,15 @@ export default function MixMixPage() {
     twoBathNLevels,
     targetVolumeMl,
     selectedDilutions,
-  } = useMixingStore()
+  } = useMixingStore(useShallow((s) => ({
+    selectedRecipeIds: s.selectedRecipeIds,
+    checkedMap: s.checkedMap,
+    toggleChecked: s.toggleChecked,
+    twoBathSelections: s.twoBathSelections,
+    twoBathNLevels: s.twoBathNLevels,
+    targetVolumeMl: s.targetVolumeMl,
+    selectedDilutions: s.selectedDilutions,
+  })))
   const { recipes } = useRecipes({})
 
   const selected = useMemo(() => recipes.filter((recipe) => selectedRecipeIds.includes(recipe.id)), [recipes, selectedRecipeIds])

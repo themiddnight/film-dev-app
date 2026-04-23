@@ -1,6 +1,6 @@
-import type { OfflineSavedRecipeRepository } from '../OfflineSavedRecipeRepository'
-import type { Recipe } from '../../types/recipe'
-import type { OfflineSavedRecipe } from '../../types/recipeCollections'
+import type { OfflineSavedRecipeRepository } from '@/repositories/OfflineSavedRecipeRepository'
+import type { Recipe } from '@/types/recipe'
+import type { OfflineSavedRecipe } from '@/types/recipeCollections'
 import { filmDevDb } from './localDb'
 
 export class LocalOfflineSavedRecipeRepository implements OfflineSavedRecipeRepository {

@@ -1,10 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FlaskConical, Search } from 'lucide-react'
-import Navbar from '../../components/Navbar'
-import { useRecipes } from '../../hooks/useRecipes'
-import { useMixingStore } from '../../store/mixingStore'
-import type { Recipe, RecipeStepType } from '../../types/recipe'
+import Navbar from '@/components/Navbar'
+import StepTypeBadge from '@/components/StepTypeBadge'
+import { useRecipes } from '@/hooks/useRecipes'
+import { useMixingStore } from '@/store/mixingStore'
+import { useUiStateStore } from '@/store/uiStateStore'
+import type { Recipe, RecipeStepType } from '@/types/recipe'
+import { useShallow } from 'zustand/react/shallow'
+import { toTitleCase } from '@/utils/string'
 
 const TYPES: Array<'all' | RecipeStepType> = ['all', 'developer', 'stop', 'fixer', 'wash_aid', 'wetting_agent']
 
@@ -31,9 +35,20 @@ function scoreRecipe(recipe: Recipe, searchTerms: string[]): number {
 
 export default function MixSelectPage() {
   const navigate = useNavigate()
-  const [query, setQuery] = useState('')
-  const [stepType, setStepType] = useState<'all' | RecipeStepType>('all')
-  const { selectedRecipeIds, setSelectedRecipeIds, resetProgress } = useMixingStore()
+  const { query, stepType, setMixSelectPage } = useUiStateStore(
+    useShallow((s) => ({
+      query: s.mixSelectPage.query,
+      stepType: s.mixSelectPage.stepType,
+      setMixSelectPage: s.setMixSelectPage,
+    }))
+  )
+  const { selectedRecipeIds, setSelectedRecipeIds, resetProgress } = useMixingStore(
+    useShallow((s) => ({
+      selectedRecipeIds: s.selectedRecipeIds,
+      setSelectedRecipeIds: s.setSelectedRecipeIds,
+      resetProgress: s.resetProgress,
+    }))
+  )
 
   const filter = useMemo(
     () => ({
@@ -72,7 +87,7 @@ export default function MixSelectPage() {
       <div className="p-4 border-b border-base-300 space-y-3">
         <label className="input input-bordered flex items-center gap-2 w-full">
           <Search size={14} className="opacity-60" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} className="grow" placeholder="Search recipes (name, film, tags, attributes...)" />
+          <input value={query} onChange={(e) => setMixSelectPage({ query: e.target.value })} className="grow" placeholder="Search recipes (name, film, tags, attributes...)" />
         </label>
 
         <div className="flex gap-2 overflow-x-auto">
@@ -80,7 +95,7 @@ export default function MixSelectPage() {
             <button
               key={type}
               className={`btn btn-xs ${stepType === type ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => setStepType(type)}
+              onClick={() => setMixSelectPage({ stepType: type })}
             >
               {type}
             </button>
@@ -97,7 +112,15 @@ export default function MixSelectPage() {
               <input type="checkbox" className="checkbox checkbox-sm mt-0.5" checked={checked} onChange={() => toggleRecipe(recipe.id)} />
               <span>
                 <span className="block font-semibold text-sm">{recipe.name}</span>
-                <span className="text-xs text-sub capitalize">{recipe.step_type ?? '-'} · {recipe.chemical_format ?? '-'}</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <StepTypeBadge stepType={recipe.step_type} />
+                  {recipe.chemical_format && (
+                    <span className="text-xs text-sub">{toTitleCase(recipe.chemical_format)}</span>
+                  )}
+                </div>
+                {recipe.description && (
+                  <span className="block text-xs text-sub/70 mt-0.5 line-clamp-2 leading-relaxed">{recipe.description}</span>
+                )}
               </span>
             </label>
           )

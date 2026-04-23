@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { recipeRepo } from '../repositories'
-import type { Recipe, RecipeFilter, RecipeStepType } from '../types/recipe'
+import { recipeRepo } from '@/repositories'
+import type { Recipe, RecipeFilter, RecipeStepType } from '@/types/recipe'
 
 type UseRecipesState = {
   recipes: Recipe[]

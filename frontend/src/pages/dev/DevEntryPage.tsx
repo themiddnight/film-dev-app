@@ -1,20 +1,20 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Layers, PlayCircle, Timer } from 'lucide-react'
-import Navbar from '../../components/Navbar'
-import { useKits } from '../../hooks/useKits'
-import { useRecipes } from '../../hooks/useRecipes'
-import { useInventory } from '../../hooks/useInventory'
-import { useDevSessionStore } from '../../store/devSessionStore'
-import { useRecentSessions } from '../../hooks/useSessions'
+import Navbar from '@/components/Navbar'
+import { useKits } from '@/hooks/useKits'
+import { useRecipes } from '@/hooks/useRecipes'
+import { useInventory } from '@/hooks/useInventory'
+import { useDevSessionStore } from '@/store/devSessionStore'
+import { useRecentSessions } from '@/hooks/useSessions'
 
 export default function DevEntryPage() {
   const navigate = useNavigate()
   const { kits } = useKits()
+  const setSource = useDevSessionStore((s) => s.setSource)
   const { recipes } = useRecipes({ step_type: 'developer' })
   const { items } = useInventory()
   const { sessions } = useRecentSessions(5)
-  const { setSource } = useDevSessionStore()
 
   const kitCards = useMemo(() => {
     return kits.map((kit) => {

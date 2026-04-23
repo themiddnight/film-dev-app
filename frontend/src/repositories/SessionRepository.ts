@@ -1,4 +1,4 @@
-import type { DevSession } from '../types/session'
+import type { DevSession } from '@/types/session'
 
 export interface SessionRepository {
   getAll(): Promise<DevSession[]>

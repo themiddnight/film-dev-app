@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import type { FavoriteRecipe, OfflineSavedRecipe } from '../../types/recipeCollections'
+import type { FavoriteRecipe, OfflineSavedRecipe } from '@/types/recipeCollections'
 
 class FilmDevDb extends Dexie {
   favoriteRecipes!: Table<FavoriteRecipe, string>

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { DevSession, SessionSource } from '../types/session'
-import type { DevType } from '../types/settings'
+import type { DevSession, SessionSource } from '@/types/session'
+import type { DevType } from '@/types/settings'
 
 type DevSource =
   | { type: 'kit'; kit_id: string }

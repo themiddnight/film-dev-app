@@ -1,5 +1,5 @@
-import type { DilutionOption, PushPull, Recipe } from '../types/recipe'
-import type { TwoBathMixSelection } from '../store/mixingStore'
+import type { DilutionOption, PushPull, Recipe } from '@/types/recipe'
+import type { TwoBathMixSelection } from '@/store/mixingStore'
 import { getChemicalsForSelection } from './twoBath'
 
 function round2(value: number): number {

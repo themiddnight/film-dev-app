@@ -1,5 +1,5 @@
-import type { Recipe } from '../types/recipe'
-import type { OfflineSavedRecipe } from '../types/recipeCollections'
+import type { Recipe } from '@/types/recipe'
+import type { OfflineSavedRecipe } from '@/types/recipeCollections'
 
 export interface OfflineSavedRecipeRepository {
   getAll(): Promise<OfflineSavedRecipe[]>

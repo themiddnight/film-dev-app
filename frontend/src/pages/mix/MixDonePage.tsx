@@ -1,14 +1,22 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Navbar from '../../components/Navbar'
-import { useRecipes } from '../../hooks/useRecipes'
-import { useMixingStore } from '../../store/mixingStore'
-import { useInventory } from '../../hooks/useInventory'
-import { isTwoBathRecipe } from '../../utils/twoBath'
+import Navbar from '@/components/Navbar'
+import { useRecipes } from '@/hooks/useRecipes'
+import { useMixingStore } from '@/store/mixingStore'
+import { useInventory } from '@/hooks/useInventory'
+import { isTwoBathRecipe } from '@/utils/twoBath'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function MixDonePage() {
   const navigate = useNavigate()
-  const { selectedRecipeIds, twoBathSelections, twoBathNLevels, resetAll } = useMixingStore()
+  const { selectedRecipeIds, twoBathSelections, twoBathNLevels, resetAll } = useMixingStore(
+    useShallow((s) => ({
+      selectedRecipeIds: s.selectedRecipeIds,
+      twoBathSelections: s.twoBathSelections,
+      twoBathNLevels: s.twoBathNLevels,
+      resetAll: s.resetAll,
+    }))
+  )
   const { recipes } = useRecipes({})
   const { save } = useInventory()
   const [saving, setSaving] = useState(false)

@@ -1,6 +1,7 @@
 // pages/HomePage.tsx — entry point / launcher
 import { useNavigate } from 'react-router-dom'
 import { Timer, FlaskConical, Package, BookOpen, Settings, ChevronRight } from 'lucide-react'
+import FilmIcon from '@/components/FilmIcon'
 
 type NavCard = {
   to: string
@@ -59,8 +60,14 @@ export default function HomePage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="bg-base-100 sticky top-0 z-30 border-b border-base-300 px-5 pt-5 pb-4">
-        <p className="text-xs font-medium text-sub uppercase tracking-widest mb-0.5">B&amp;W Film</p>
-        <h1 className="text-2xl font-bold tracking-tight">Develop</h1>
+        <div className="flex items-center gap-3">
+          {/* Film canister icon — spans both lines */}
+          <FilmIcon className="w-10 h-10 shrink-0" />
+          <div className="flex flex-col justify-center">
+            <p className="text-xs font-medium text-sub uppercase tracking-widest leading-none mb-1">B&amp;W Film</p>
+            <h1 className="text-2xl font-bold tracking-tight leading-none">SilverGrain</h1>
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">

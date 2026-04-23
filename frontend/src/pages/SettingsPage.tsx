@@ -1,9 +1,15 @@
-import { useEffect, useState } from 'react'
-import { Download, RefreshCw, Settings } from 'lucide-react'
-import Navbar from '../components/Navbar'
-import { useEquipmentStore } from '../store/equipmentStore'
-import { usePwaStore } from '../store/pwaStore'
-import { useSettingsStore } from '../store/settingsStore'
+import { useState, useEffect } from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import { useEquipmentStore } from '@/store/equipmentStore'
+import { usePwaStore } from '@/store/pwaStore'
+import { useSettingsStore } from '@/store/settingsStore'
+import Navbar from '@/components/Navbar'
+import { Settings, Download, RefreshCw } from 'lucide-react'
+import { toTitleCase } from '@/utils/string'
+
+const TANK_TYPES = ['paterson', 'stainless', 'jobo', 'other']
+const AGITATION_METHODS = ['inversion', 'rotation', 'stand', 'rotary']
+const WATER_HARDNESS = ['soft', 'medium', 'hard']
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -11,9 +17,25 @@ type BeforeInstallPromptEvent = Event & {
 }
 
 export default function SettingsPage() {
-  const { equipment, setEquipment } = useEquipmentStore()
-  const { isRegistered, isOfflineReady, hasUpdate, reloadWithUpdate } = usePwaStore()
-  const { sound, vibrate, screenFlash, update } = useSettingsStore()
+  const { equipment, setEquipment } = useEquipmentStore(
+    useShallow((s) => ({ equipment: s.equipment, setEquipment: s.setEquipment }))
+  )
+  const { isRegistered, isOfflineReady, hasUpdate, reloadWithUpdate } = usePwaStore(
+    useShallow((s) => ({
+      isRegistered: s.isRegistered,
+      isOfflineReady: s.isOfflineReady,
+      hasUpdate: s.hasUpdate,
+      reloadWithUpdate: s.reloadWithUpdate,
+    }))
+  )
+  const { sound, vibrate, screenFlash, update } = useSettingsStore(
+    useShallow((s) => ({
+      sound: s.sound,
+      vibrate: s.vibrate,
+      screenFlash: s.screenFlash,
+      update: s.update,
+    }))
+  )
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
 
@@ -67,10 +89,11 @@ export default function SettingsPage() {
             value={equipment.tank_type}
             onChange={(e) => setEquipment({ tank_type: e.target.value as 'paterson' | 'stainless' | 'jobo' | 'other' })}
           >
-            <option value="paterson">paterson</option>
-            <option value="stainless">stainless</option>
-            <option value="jobo">jobo</option>
-            <option value="other">other</option>
+            {TANK_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {toTitleCase(type)}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -83,10 +106,11 @@ export default function SettingsPage() {
               setEquipment({ agitation_method: e.target.value as 'inversion' | 'rotation' | 'stand' | 'rotary' })
             }
           >
-            <option value="inversion">inversion</option>
-            <option value="rotation">rotation</option>
-            <option value="rotary">rotary</option>
-            <option value="stand">stand</option>
+            {AGITATION_METHODS.map((method) => (
+              <option key={method} value={method}>
+                {toTitleCase(method)}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -97,9 +121,11 @@ export default function SettingsPage() {
             value={equipment.water_hardness}
             onChange={(e) => setEquipment({ water_hardness: e.target.value as 'soft' | 'medium' | 'hard' })}
           >
-            <option value="soft">soft</option>
-            <option value="medium">medium</option>
-            <option value="hard">hard</option>
+            {WATER_HARDNESS.map((hardness) => (
+              <option key={hardness} value={hardness}>
+                {toTitleCase(hardness)}
+              </option>
+            ))}
           </select>
         </div>
 

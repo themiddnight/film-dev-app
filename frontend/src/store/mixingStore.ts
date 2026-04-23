@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { PushPull } from '../types/recipe'
+import type { PushPull } from '@/types/recipe'
 
 type MixingMode = 'prep' | 'step-by-step'
 export type TwoBathMixSelection = 'both' | 'bath_a' | 'bath_b'

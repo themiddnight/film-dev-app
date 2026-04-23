@@ -1,5 +1,5 @@
-import type { InventoryFilter, InventoryItem } from '../types/inventory'
-import type { RecipeStepType } from '../types/recipe'
+import type { InventoryFilter, InventoryItem } from '@/types/inventory'
+import type { RecipeStepType } from '@/types/recipe'
 
 export interface InventoryRepository {
   getAll(filter?: InventoryFilter): Promise<InventoryItem[]>

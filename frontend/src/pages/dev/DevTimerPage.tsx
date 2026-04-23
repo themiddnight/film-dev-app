@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, Pause, Play } from 'lucide-react'
-import Navbar from '../../components/Navbar'
-import ConfirmLeaveModal from '../../components/ConfirmLeaveModal'
-import { useDevSessionStore } from '../../store/devSessionStore'
-import { inventoryRepo, kitRepo, recipeRepo } from '../../repositories'
-import { applyAdjustments, getRecipeTimingSeconds } from '../../utils/dev'
-import { useSettingsStore } from '../../store/settingsStore'
-import type { InventoryItem } from '../../types/inventory'
-import type { Recipe } from '../../types/recipe'
+import Navbar from '@/components/Navbar'
+import ConfirmLeaveModal from '@/components/ConfirmLeaveModal'
+import { useDevSessionStore } from '@/store/devSessionStore'
+import { useSettingsStore } from '@/store/settingsStore'
+import { inventoryRepo, kitRepo, recipeRepo } from '@/repositories'
+import { applyAdjustments, getRecipeTimingSeconds } from '@/utils/dev'
+import type { InventoryItem } from '@/types/inventory'
+import type { Recipe } from '@/types/recipe'
+import { useShallow } from 'zustand/react/shallow'
 
 type TimerStep = {
   id: string
@@ -56,8 +57,21 @@ function format(seconds: number): string {
 
 export default function DevTimerPage() {
   const navigate = useNavigate()
-  const { source, temperature_celsius, dev_type, agitation_method } = useDevSessionStore()
-  const { sound, vibrate, screenFlash } = useSettingsStore()
+  const { source, temperature_celsius, dev_type, agitation_method } = useDevSessionStore(
+    useShallow((s) => ({
+      source: s.source,
+      temperature_celsius: s.temperature_celsius,
+      dev_type: s.dev_type,
+      agitation_method: s.agitation_method,
+    }))
+  )
+  const { sound, vibrate, screenFlash } = useSettingsStore(
+    useShallow((s) => ({
+      sound: s.sound,
+      vibrate: s.vibrate,
+      screenFlash: s.screenFlash,
+    }))
+  )
   const [steps, setSteps] = useState<TimerStep[]>([])
   const [stepIndex, setStepIndex] = useState(0)
   const [remaining, setRemaining] = useState(0)

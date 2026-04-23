@@ -1,10 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Plus, Search } from 'lucide-react'
-import Navbar from '../components/Navbar'
-import { useRecipes } from '../hooks/useRecipes'
-import { useRecipeCollections } from '../hooks/useRecipeCollections'
-import type { Recipe, RecipeStepType } from '../types/recipe'
+import { BookOpen, Plus, Search, Star } from 'lucide-react'
+import Navbar from '@/components/Navbar'
+import StepTypeBadge from '@/components/StepTypeBadge'
+import { useRecipes } from '@/hooks/useRecipes'
+import { useRecipeCollections } from '@/hooks/useRecipeCollections'
+import { useUiStateStore } from '@/store/uiStateStore'
+import { useShallow } from 'zustand/react/shallow'
+import { toTitleCase } from '@/utils/string'
+import type { Recipe, RecipeStepType } from '@/types/recipe'
 
 const STEP_TYPES: Array<{ value: 'all' | RecipeStepType; label: string }> = [
   { value: 'all', label: 'All' },
@@ -15,13 +19,8 @@ const STEP_TYPES: Array<{ value: 'all' | RecipeStepType; label: string }> = [
   { value: 'wetting_agent', label: 'Wetting' },
 ]
 
-/**
- * Score a recipe against multiple search terms.
- * Returns the count of terms that appear in the recipe's searchable fields.
- */
 function scoreRecipe(recipe: Recipe, searchTerms: string[]): number {
   if (searchTerms.length === 0) return 0
-
   const searchText = [
     recipe.name,
     recipe.description,
@@ -32,38 +31,67 @@ function scoreRecipe(recipe: Recipe, searchTerms: string[]): number {
   ]
     .map((v) => (v ?? '').toLowerCase())
     .join(' ')
-
   return searchTerms.filter((term) => searchText.includes(term.toLowerCase())).length
 }
 
 export default function RecipesPage() {
   const navigate = useNavigate()
-  const [source, setSource] = useState<'system' | 'personal'>('system')
-  const [stepType, setStepType] = useState<'all' | RecipeStepType>('all')
-  const [query, setQuery] = useState('')
 
-  const filter = useMemo(() => {
-    return {
-      author_type: source,
-      step_type: stepType === 'all' ? undefined : stepType,
-    }
-  }, [source, stepType])
+  const { tab, stepType, query, setRecipesPage } = useUiStateStore(
+    useShallow((s) => ({
+      tab: s.recipesPage.tab,
+      stepType: s.recipesPage.stepType,
+      query: s.recipesPage.query,
+      setRecipesPage: s.setRecipesPage,
+    }))
+  )
 
-  const { recipes: allRecipes, loading, error } = useRecipes(filter)
-  const { isFavorite, isOfflineSaved } = useRecipeCollections()
+  const { favoriteIds, isFavorite } = useRecipeCollections()
 
-  // Parse search query into terms and score/sort recipes
+  const systemFilter = useMemo(() => ({
+    author_type: 'system' as const,
+    step_type: stepType === 'all' ? undefined : stepType,
+  }), [stepType])
+
+  const allFilter = useMemo(() => ({
+    step_type: stepType === 'all' ? undefined : stepType,
+  }), [stepType])
+
+  const { recipes: systemRecipes, loading: systemLoading, error: systemError } = useRecipes(
+    tab === 'system' ? systemFilter : { author_type: 'system' as const }
+  )
+  const { recipes: allRecipes, loading: personalLoading, error: personalError } = useRecipes(
+    tab === 'personal' ? allFilter : { author_type: 'personal' as const }
+  )
+
+  const loading = tab === 'system' ? systemLoading : personalLoading
+  const error = tab === 'system' ? systemError : personalError
+
   const searchTerms = useMemo(() => query.trim().split(/\s+/).filter(Boolean), [query])
 
-  const recipes = useMemo(() => {
-    if (searchTerms.length === 0) return allRecipes
+  const tabRecipes = useMemo(() => {
+    if (tab === 'system') return systemRecipes
 
-    return allRecipes
+    const personal = allRecipes.filter((r) => r.author_type === 'personal')
+    const favSystem = allRecipes.filter(
+      (r) => r.author_type === 'system' && favoriteIds.has(r.id)
+    )
+    return [...personal, ...favSystem]
+  }, [tab, systemRecipes, allRecipes, favoriteIds])
+
+  const recipes = useMemo(() => {
+    if (searchTerms.length === 0) return tabRecipes
+    return tabRecipes
       .map((recipe) => ({ recipe, score: scoreRecipe(recipe, searchTerms) }))
       .filter(({ score }) => score > 0)
       .sort((a, b) => b.score - a.score)
       .map(({ recipe }) => recipe)
-  }, [allRecipes, searchTerms])
+  }, [tabRecipes, searchTerms])
+
+  const personalCount = useMemo(() => {
+    const personal = allRecipes.filter((r) => r.author_type === 'personal').length
+    return personal + favoriteIds.size
+  }, [allRecipes, favoriteIds])
 
   return (
     <div className="flex flex-col h-full">
@@ -86,16 +114,19 @@ export default function RecipesPage() {
       <div className="p-4 border-b border-base-300 space-y-3">
         <div className="join w-full">
           <button
-            className={`join-item btn btn-sm flex-1 ${source === 'system' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setSource('system')}
+            className={`join-item btn btn-sm flex-1 ${tab === 'system' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setRecipesPage({ tab: 'system' })}
           >
             System
           </button>
           <button
-            className={`join-item btn btn-sm flex-1 ${source === 'personal' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setSource('personal')}
+            className={`join-item btn btn-sm flex-1 ${tab === 'personal' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setRecipesPage({ tab: 'personal' })}
           >
             Personal
+            {personalCount > 0 && (
+              <span className="badge badge-xs badge-neutral ml-1">{personalCount}</span>
+            )}
           </button>
         </div>
 
@@ -103,7 +134,7 @@ export default function RecipesPage() {
           <Search size={14} className="opacity-60" />
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => setRecipesPage({ query: e.target.value })}
             className="grow"
             placeholder="Search recipes (name, film, tags, attributes...)"
           />
@@ -114,7 +145,7 @@ export default function RecipesPage() {
             <button
               key={item.value}
               className={`btn btn-xs ${stepType === item.value ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => setStepType(item.value)}
+              onClick={() => setRecipesPage({ stepType: item.value })}
             >
               {item.label}
             </button>
@@ -128,28 +159,45 @@ export default function RecipesPage() {
         {!loading && recipes.length === 0 && (
           <div className="text-center py-12 text-sub">
             <BookOpen size={24} className="mx-auto mb-2 opacity-60" />
-            No recipes found
+            {tab === 'personal'
+              ? 'No personal recipes yet. Create one or favourite a system recipe.'
+              : 'No recipes found'}
           </div>
         )}
 
         <div className="space-y-2">
-          {recipes.map((recipe) => (
-            <button
-              key={recipe.id}
-              className="w-full text-left p-3 rounded-lg bg-base-200 hover:bg-base-300 transition-colors"
-              onClick={() => navigate(`/recipes/${recipe.id}`)}
-            >
-              <div className="font-semibold text-sm">{recipe.name}</div>
-              <div className="text-xs text-sub mt-0.5 capitalize">
-                {recipe.step_type ?? 'unknown'}
-                {recipe.chemical_format ? ` · ${recipe.chemical_format}` : ''}
-              </div>
-              <div className="mt-1 flex gap-1.5">
-                {isFavorite(recipe.id) && <span className="badge badge-outline badge-xs">favourite</span>}
-                {isOfflineSaved(recipe.id) && <span className="badge badge-outline badge-xs">offline</span>}
-              </div>
-            </button>
-          ))}
+          {recipes.map((recipe) => {
+            const isSystemFav = recipe.author_type === 'system' && tab === 'personal'
+            return (
+              <button
+                key={recipe.id}
+                className="w-full text-left p-3 rounded-lg bg-base-200 hover:bg-base-300 transition-colors"
+                onClick={() => navigate(`/recipes/${recipe.id}`)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-semibold text-sm">{recipe.name}</div>
+                  {isFavorite(recipe.id) && tab === 'system' && (
+                    <Star size={12} className="text-warning shrink-0 mt-0.5 fill-warning" />
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <StepTypeBadge stepType={recipe.step_type} />
+                  {recipe.chemical_format && (
+                    <span className="text-xs text-sub">{toTitleCase(recipe.chemical_format)}</span>
+                  )}
+                </div>
+                {recipe.description && (
+                  <p className="text-xs text-sub/70 mt-1 line-clamp-2 leading-relaxed">{recipe.description}</p>
+                )}
+                {isSystemFav && (
+                  <div className="mt-1.5 flex gap-1.5">
+                    <span className="badge badge-outline badge-xs text-warning border-warning">system</span>
+                    <span className="badge badge-outline badge-xs text-warning border-warning">★ favourite</span>
+                  </div>
+                )}
+              </button>
+            )
+          })}
         </div>
       </div>
     </div>

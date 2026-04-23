@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { kitRepo } from '../repositories'
-import type { Kit } from '../types/kit'
+import { kitRepo } from '@/repositories'
+import type { Kit } from '@/types/kit'
 
 type KitState = {
   kits: Kit[]

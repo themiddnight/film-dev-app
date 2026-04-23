@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { favoriteRecipeRepo, offlineSavedRecipeRepo } from '../repositories'
-import type { Recipe } from '../types/recipe'
+import { favoriteRecipeRepo, offlineSavedRecipeRepo } from '@/repositories'
+import type { Recipe } from '@/types/recipe'
 
 type RecipeCollectionsState = {
   favoriteIds: Set<string>

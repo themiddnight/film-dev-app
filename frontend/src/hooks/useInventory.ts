@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { inventoryRepo } from '../repositories'
-import type { InventoryFilter, InventoryItem } from '../types/inventory'
+import { inventoryRepo } from '@/repositories'
+import type { InventoryFilter, InventoryItem } from '@/types/inventory'
 
 type InventoryState = {
   items: InventoryItem[]

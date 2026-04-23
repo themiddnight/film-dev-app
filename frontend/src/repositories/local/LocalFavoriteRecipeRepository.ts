@@ -1,5 +1,5 @@
-import type { FavoriteRecipeRepository } from '../FavoriteRecipeRepository'
-import type { FavoriteRecipe } from '../../types/recipeCollections'
+import type { FavoriteRecipeRepository } from '@/repositories/FavoriteRecipeRepository'
+import type { FavoriteRecipe } from '@/types/recipeCollections'
 import { filmDevDb } from './localDb'
 
 export class LocalFavoriteRecipeRepository implements FavoriteRecipeRepository {

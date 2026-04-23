@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Navbar from '../../components/Navbar'
-import { useDevSessionStore } from '../../store/devSessionStore'
-import { kitRepo, inventoryRepo, recipeRepo } from '../../repositories'
-import type { InventoryItem } from '../../types/inventory'
-import { buildInventoryUpdates } from '../../utils/dev'
-import { useSaveSession } from '../../hooks/useSessions'
+import Navbar from '@/components/Navbar'
+import { useDevSessionStore } from '@/store/devSessionStore'
+import { kitRepo, inventoryRepo, recipeRepo } from '@/repositories'
+import type { InventoryItem } from '@/types/inventory'
+import { buildInventoryUpdates } from '@/utils/dev'
+import { useSaveSession } from '@/hooks/useSessions'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function DevDonePage() {
   const navigate = useNavigate()
@@ -23,7 +24,23 @@ export default function DevDonePage() {
     completeTimerSession,
     toSessionSource,
     resetRuntime,
-  } = useDevSessionStore()
+  } = useDevSessionStore(
+    useShallow((s) => ({
+      source: s.source,
+      film_format: s.film_format,
+      rolls_count: s.rolls_count,
+      temperature_celsius: s.temperature_celsius,
+      dev_type: s.dev_type,
+      agitation_method: s.agitation_method,
+      target_duration_seconds: s.target_duration_seconds,
+      started_at: s.started_at,
+      selected_bath_b_item_id: s.selected_bath_b_item_id,
+      compensation_pct: s.compensation_pct,
+      completeTimerSession: s.completeTimerSession,
+      toSessionSource: s.toSessionSource,
+      resetRuntime: s.resetRuntime,
+    }))
+  )
   const { save } = useSaveSession()
   const didRun = useRef(false)
   const sourceNameRef = useRef<string>('')
@@ -129,6 +146,7 @@ export default function DevDonePage() {
     toSessionSource,
     save,
     navigate,
+    compensation_pct,
   ])
 
   return (

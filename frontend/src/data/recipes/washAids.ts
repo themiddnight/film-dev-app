@@ -1,0 +1,77 @@
+import type { Recipe } from '@/types/recipe'
+import { withRecipeDefaults, systemCreated } from './helpers'
+
+export const washAidRecipes: Recipe[] = [
+  withRecipeDefaults({
+    id: 'hypo-clear-simple',
+    slug: 'hypo-clear-simple',
+    name: 'Hypo Clearing Agent (Simple)',
+    description: 'One-ingredient wash aid using sodium sulfite. Speeds up fixer removal, cutting final wash time from 30 min to 5–10 min. Use after fixing and before final wash.',
+    step_type: 'wash_aid',
+    film_compatibility: { scope: 'general' },
+    chemical_format: 'powder_raw',
+    chemicals: [
+      { name: 'Sodium Sulfite (anhydrous)', amount_per_liter: 20, unit: 'g', order: 1 },
+    ],
+    mixing_steps: [
+      { instruction: 'Dissolve 20g sodium sulfite in 1 litre of warm water (~40°C).' },
+      { instruction: 'Use at working strength — do not dilute further.' },
+      { instruction: '⚠ Mix fresh each session. Do not store working solution — sodium sulfite oxidizes quickly.' },
+    ],
+    develop_timing: { type: 'fixed', fixed_seconds: 120 },
+    shelf_life_days: 1,
+    optimal_temp: { min: 18, max: 24 },
+    storage: {
+      shelf_life: 'Use immediately — do not store working solution',
+      container: 'Mix fresh per session',
+      notes: 'Can treat ~15–20 rolls per litre before exhaustion.',
+    },
+    author_type: 'system',
+    visibility: 'published',
+    status: 'published',
+    tags: ['wash-aid', 'hypo-clear', 'sodium-sulfite', 'archival', 'diy'],
+    created_at: systemCreated,
+    updated_at: systemCreated,
+  }),
+  withRecipeDefaults({
+    id: 'hypo-clear-buffered',
+    slug: 'hypo-clear-buffered',
+    name: 'Hypo Clearing Agent (Buffered)',
+    description: 'Kodak-style buffered wash aid. Matches commercial Hypo Clearing Agent formula. Sodium bisulfite buffers to neutral pH, EDTA and sodium citrate prevent hard water deposits. Mix as stock 1:4 for working solution.',
+    step_type: 'wash_aid',
+    film_compatibility: { scope: 'general' },
+    chemical_format: 'powder_raw',
+    chemicals: [
+      { name: 'Sodium Sulfite (anhydrous)', amount_per_liter: 100, unit: 'g', order: 1 },
+      { name: 'Sodium Bisulfite', amount_per_liter: 25, unit: 'g', order: 2 },
+      { name: 'EDTA (Tetrasodium salt)', amount_per_liter: 5, unit: 'g', order: 3 },
+      { name: 'Sodium Citrate', amount_per_liter: 5, unit: 'g', order: 4 },
+    ],
+    mixing_steps: [
+      { instruction: 'Start with 750ml warm water. Dissolve chemicals in order listed.' },
+      { instruction: 'Top up to 1 litre — this is the stock solution.' },
+      { instruction: 'Working solution: dilute 1 part stock + 4 parts water (1:4).' },
+      { instruction: 'After fixing, rinse film 30s in water, then treat with working solution for 2 min.' },
+    ],
+    dilution: {
+      type: 'fixed',
+      concentrate_parts: 1,
+      water_parts: 4,
+      label: '1+4 (working)',
+    },
+    develop_timing: { type: 'fixed', fixed_seconds: 120 },
+    shelf_life_days: 90,
+    optimal_temp: { min: 18, max: 24 },
+    storage: {
+      shelf_life: 'Stock: up to 3 months. Working solution: discard after use.',
+      container: 'Sealed bottle for stock. Working solution is single-use.',
+      notes: 'Working solution treats ~15–20 rolls per litre.',
+    },
+    author_type: 'system',
+    visibility: 'published',
+    status: 'published',
+    tags: ['wash-aid', 'hypo-clear', 'buffered', 'archival', 'hard-water'],
+    created_at: systemCreated,
+    updated_at: systemCreated,
+  }),
+]

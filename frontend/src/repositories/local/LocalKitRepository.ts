@@ -1,8 +1,8 @@
 // repositories/local/LocalKitRepository.ts
 //  implementation: inventory-based kits in localStorage.
 
-import type { KitRepository } from '../KitRepository'
-import type { Kit } from '../../types/kit'
+import type { KitRepository } from '@/repositories/KitRepository'
+import type { Kit } from '@/types/kit'
 const KITS_KEY = 'kits'
 
 function now(): string {

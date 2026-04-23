@@ -1,4 +1,4 @@
-import type { FavoriteRecipe } from '../types/recipeCollections'
+import type { FavoriteRecipe } from '@/types/recipeCollections'
 
 export interface FavoriteRecipeRepository {
   getAll(): Promise<FavoriteRecipe[]>

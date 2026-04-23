@@ -1,10 +1,11 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Navbar from '../../components/Navbar'
-import { useRecipes } from '../../hooks/useRecipes'
-import { useMixingStore } from '../../store/mixingStore'
-import { getBathBNOptions, isTwoBathRecipe } from '../../utils/twoBath'
-import type { PushPull } from '../../types/recipe'
+import Navbar from '@/components/Navbar'
+import { useRecipes } from '@/hooks/useRecipes'
+import { useMixingStore } from '@/store/mixingStore'
+import { getBathBNOptions, isTwoBathRecipe } from '@/utils/twoBath'
+import type { PushPull } from '@/types/recipe'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function MixSummaryPage() {
   const navigate = useNavigate()
@@ -21,7 +22,22 @@ export default function MixSummaryPage() {
     setTwoBathSelection,
     setTwoBathNLevel,
     resetProgress,
-  } = useMixingStore()
+  } = useMixingStore(
+    useShallow((s) => ({
+      selectedRecipeIds: s.selectedRecipeIds,
+      mode: s.mode,
+      setMode: s.setMode,
+      targetVolumeMl: s.targetVolumeMl,
+      setTargetVolume: s.setTargetVolume,
+      selectedDilutions: s.selectedDilutions,
+      twoBathSelections: s.twoBathSelections,
+      twoBathNLevels: s.twoBathNLevels,
+      setDilution: s.setDilution,
+      setTwoBathSelection: s.setTwoBathSelection,
+      setTwoBathNLevel: s.setTwoBathNLevel,
+      resetProgress: s.resetProgress,
+    }))
+  )
   const { recipes } = useRecipes({})
 
   const selected = useMemo(() => recipes.filter((recipe) => selectedRecipeIds.includes(recipe.id)), [recipes, selectedRecipeIds])

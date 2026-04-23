@@ -1,5 +1,5 @@
-import type { SessionRepository } from '../SessionRepository'
-import type { DevSession } from '../../types/session'
+import type { SessionRepository } from '@/repositories/SessionRepository'
+import type { DevSession } from '@/types/session'
 
 const STORAGE_KEY = 'sessions'
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BookOpen, FlaskConical, Home, Package, Settings, Timer } from 'lucide-react'
-import { useMixingStore } from '../store/mixingStore'
+import { useMixingStore } from '@/store/mixingStore'
 
 // Tablet sidebar tabs (Home first, then the rest)
 const sidebarTabs = [

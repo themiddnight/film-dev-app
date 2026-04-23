@@ -1,16 +1,26 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Navbar from '../../components/Navbar'
-import ConfirmLeaveModal from '../../components/ConfirmLeaveModal'
-import { useRecipes } from '../../hooks/useRecipes'
-import { useMixingStore } from '../../store/mixingStore'
-import { formatScaledChemicalText } from '../../utils/mixInstruction'
-import { getChemicalsForSelection, isTwoBathRecipe } from '../../utils/twoBath'
+import Navbar from '@/components/Navbar'
+import ConfirmLeaveModal from '@/components/ConfirmLeaveModal'
+import { useRecipes } from '@/hooks/useRecipes'
+import { useMixingStore } from '@/store/mixingStore'
+import { formatScaledChemicalText } from '@/utils/mixInstruction'
+import { getChemicalsForSelection, isTwoBathRecipe } from '@/utils/twoBath'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function MixPrepPage() {
   const navigate = useNavigate()
   const [showLeaveModal, setShowLeaveModal] = useState(false)
-  const { selectedRecipeIds, checkedMap, toggleChecked, twoBathSelections, twoBathNLevels, targetVolumeMl } = useMixingStore()
+  const { selectedRecipeIds, checkedMap, toggleChecked, twoBathSelections, twoBathNLevels, targetVolumeMl } = useMixingStore(
+    useShallow((s) => ({
+      selectedRecipeIds: s.selectedRecipeIds,
+      checkedMap: s.checkedMap,
+      toggleChecked: s.toggleChecked,
+      twoBathSelections: s.twoBathSelections,
+      twoBathNLevels: s.twoBathNLevels,
+      targetVolumeMl: s.targetVolumeMl,
+    }))
+  )
   const { recipes } = useRecipes({})
 
   const selected = useMemo(() => recipes.filter((recipe) => selectedRecipeIds.includes(recipe.id)), [recipes, selectedRecipeIds])

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trash2, Plus } from 'lucide-react'
-import Navbar from '../components/Navbar'
-import { useRecipeMutations } from '../hooks/useRecipes'
-import type { Chemical, MixingStep, RecipeStepType, ChemicalFormat } from '../types/recipe'
+import Navbar from '@/components/Navbar'
+import { useRecipeMutations } from '@/hooks/useRecipes'
+import { toTitleCase } from '@/utils/string'
+import type { Chemical, MixingStep, RecipeStepType, ChemicalFormat } from '@/types/recipe'
 
 const STEP_TYPES: RecipeStepType[] = ['developer', 'stop', 'fixer', 'wash_aid', 'wetting_agent']
 const CHEMICAL_FORMATS: ChemicalFormat[] = ['ready_to_use', 'powder_raw', 'powder_concentrate', 'liquid_concentrate', 'diy']
@@ -161,7 +162,7 @@ export default function CreateRecipeFullPage() {
               >
                 {STEP_TYPES.map((type) => (
                   <option key={type} value={type}>
-                    {type}
+                    {toTitleCase(type)}
                   </option>
                 ))}
               </select>
@@ -236,7 +237,7 @@ export default function CreateRecipeFullPage() {
             >
               {CHEMICAL_FORMATS.map((format) => (
                 <option key={format} value={format}>
-                  {format}
+                  {toTitleCase(format)}
                 </option>
               ))}
             </select>

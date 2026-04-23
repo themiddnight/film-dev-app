@@ -1,7 +1,7 @@
-import type { InventoryItem } from '../types/inventory'
-import type { Recipe } from '../types/recipe'
-import type { DevSession } from '../types/session'
-import type { DevType } from '../types/settings'
+import type { InventoryItem } from '@/types/inventory'
+import type { Recipe } from '@/types/recipe'
+import type { DevSession } from '@/types/session'
+import type { DevType } from '@/types/settings'
 
 export function getRecipeTimingSeconds(recipe: Recipe, tempCelsius: number, devType: DevType): number {
   const timing = recipe.develop_timing

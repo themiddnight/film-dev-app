@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Navbar from '../../components/Navbar'
-import { useRecipes } from '../../hooks/useRecipes'
-import { useMixingStore } from '../../store/mixingStore'
-import { getChemicalsForSelection, isTwoBathRecipe } from '../../utils/twoBath'
+import Navbar from '@/components/Navbar'
+import { useRecipes } from '@/hooks/useRecipes'
+import { useMixingStore } from '@/store/mixingStore'
+import { getChemicalsForSelection, isTwoBathRecipe } from '@/utils/twoBath'
+import { useShallow } from 'zustand/react/shallow'
 
 function scaled(amountPerLiter: number, targetMl: number): number {
   return Math.round((amountPerLiter * targetMl) / 1000 * 100) / 100
@@ -11,7 +12,15 @@ function scaled(amountPerLiter: number, targetMl: number): number {
 
 export default function MixShoppingPage() {
   const navigate = useNavigate()
-  const { selectedRecipeIds, targetVolumeMl, selectedDilutions, twoBathSelections, twoBathNLevels } = useMixingStore()
+  const { selectedRecipeIds, targetVolumeMl, selectedDilutions, twoBathSelections, twoBathNLevels } = useMixingStore(
+    useShallow((s) => ({
+      selectedRecipeIds: s.selectedRecipeIds,
+      targetVolumeMl: s.targetVolumeMl,
+      selectedDilutions: s.selectedDilutions,
+      twoBathSelections: s.twoBathSelections,
+      twoBathNLevels: s.twoBathNLevels,
+    }))
+  )
   const { recipes } = useRecipes({})
 
   const selected = useMemo(() => recipes.filter((recipe) => selectedRecipeIds.includes(recipe.id)), [recipes, selectedRecipeIds])

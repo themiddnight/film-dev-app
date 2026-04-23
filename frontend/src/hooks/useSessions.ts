@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { sessionRepo } from '../repositories'
-import type { DevSession } from '../types/session'
+import { sessionRepo } from '@/repositories'
+import type { DevSession } from '@/types/session'
 
 type SessionsState = {
   sessions: DevSession[]

@@ -1,22 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Navbar from '../../components/Navbar'
-import { recipeRepo, kitRepo, inventoryRepo } from '../../repositories'
-import { useDevSessionStore } from '../../store/devSessionStore'
-import type { Recipe } from '../../types/recipe'
-import type { Kit } from '../../types/kit'
-import type { InventoryItem } from '../../types/inventory'
-import { applyAdjustments, getRecipeTimingSeconds } from '../../utils/dev'
-import type { DevType } from '../../types/settings'
-import { useEquipmentStore } from '../../store/equipmentStore'
+import Navbar from '@/components/Navbar'
+import { recipeRepo, kitRepo, inventoryRepo } from '@/repositories'
+import { useDevSessionStore } from '@/store/devSessionStore'
+import type { Recipe } from '@/types/recipe'
+import type { Kit } from '@/types/kit'
+import type { InventoryItem } from '@/types/inventory'
+import { applyAdjustments, getRecipeTimingSeconds } from '@/utils/dev'
+import type { DevType } from '@/types/settings'
+import { useEquipmentStore } from '@/store/equipmentStore'
+import { useShallow } from 'zustand/react/shallow'
 
 function getBaseSeconds(recipe: Recipe, temperatureCelsius: number, devType: DevType): number {
   if (recipe.constraints?.is_two_bath && (recipe.develop_steps?.length ?? 0) > 0) {
-    return (recipe.develop_steps ?? [])
-      .filter((step) => step.type === 'developer' || step.type === 'activator')
-      .reduce((sum, step) => sum + (typeof step.duration_seconds === 'number' ? step.duration_seconds : 0), 0)
+    const step = (recipe.develop_steps ?? []).find((s) => s.type === 'developer')
+    const seconds = step?.duration_seconds
+    return typeof seconds === 'number' ? seconds : 0
   }
-
   return getRecipeTimingSeconds(recipe, temperatureCelsius, devType)
 }
 
@@ -41,8 +41,20 @@ export default function DevSetupPage() {
     setConfig,
     setSelectedBathBItemId: storeSetBathB,
     startTimerSession,
-  } = useDevSessionStore()
-  const { equipment } = useEquipmentStore()
+  } = useDevSessionStore(
+    useShallow((s) => ({
+      source: s.source,
+      film_format: s.film_format,
+      rolls_count: s.rolls_count,
+      temperature_celsius: s.temperature_celsius,
+      dev_type: s.dev_type,
+      agitation_method: s.agitation_method,
+      setConfig: s.setConfig,
+      setSelectedBathBItemId: s.setSelectedBathBItemId,
+      startTimerSession: s.startTimerSession,
+    }))
+  )
+  const { equipment } = useEquipmentStore(useShallow((s) => ({ equipment: s.equipment })))
   const [sessionTankType, setSessionTankType] = useState<'paterson' | 'stainless' | 'jobo' | 'other'>(equipment.tank_type)
   const [sessionWaterHardness, setSessionWaterHardness] = useState<'soft' | 'medium' | 'hard'>(equipment.water_hardness)
 

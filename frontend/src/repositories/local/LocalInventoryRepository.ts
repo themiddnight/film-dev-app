@@ -1,6 +1,6 @@
-import type { InventoryRepository } from '../InventoryRepository'
-import type { InventoryFilter, InventoryItem } from '../../types/inventory'
-import type { RecipeStepType } from '../../types/recipe'
+import type { InventoryRepository } from '@/repositories/InventoryRepository'
+import type { InventoryFilter, InventoryItem } from '@/types/inventory'
+import type { RecipeStepType } from '@/types/recipe'
 
 const STORAGE_KEY = 'inventory'
 

@@ -1,5 +1,5 @@
-import type { Chemical, MixingStep, PushPull, Recipe } from '../types/recipe'
-import type { TwoBathMixSelection } from '../store/mixingStore'
+import type { Chemical, MixingStep, PushPull, Recipe } from '@/types/recipe'
+import type { TwoBathMixSelection } from '@/store/mixingStore'
 
 type TwoBathRole = 'bath_a' | 'bath_b'
 

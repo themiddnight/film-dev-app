@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import Navbar from '../components/Navbar'
-import { useRecipeById, useRecipeMutations } from '../hooks/useRecipes'
-import type { RecipeStepType } from '../types/recipe'
+import Navbar from '@/components/Navbar'
+import { useRecipeById, useRecipeMutations } from '@/hooks/useRecipes'
+import type { RecipeStepType } from '@/types/recipe'
 
 const STEP_TYPES: RecipeStepType[] = ['developer', 'stop', 'fixer', 'wash_aid', 'wetting_agent']
 

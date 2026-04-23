@@ -21,6 +21,7 @@ export type ChemicalFormat =
   | 'liquid_concentrate'
   | 'ready_to_use'
   | 'diy'
+  | 'water_only'
 
 export type RecipeStepType =
   | 'developer'

@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import Navbar from '../components/Navbar'
-import { useRecipeById, useRecipeMutations } from '../hooks/useRecipes'
-import { useRecipeCollections } from '../hooks/useRecipeCollections'
+import Navbar from '@/components/Navbar'
+import { useRecipeById, useRecipeMutations } from '@/hooks/useRecipes'
+import { useRecipeCollections } from '@/hooks/useRecipeCollections'
+import { toTitleCase } from '@/utils/string'
 
 export default function RecipeDetailPage() {
   const navigate = useNavigate()
@@ -10,7 +11,8 @@ export default function RecipeDetailPage() {
   const { recipe, loading } = useRecipeById(id)
   const { deleteRecipe, loading: mutating } = useRecipeMutations()
   const [deleting, setDeleting] = useState(false)
-  const { isFavorite, isOfflineSaved, toggleFavorite, toggleOfflineSaved } = useRecipeCollections()
+  // NOTE: isOfflineSaved, toggleOfflineSaved retained for future offline feature
+  const { isFavorite, toggleFavorite } = useRecipeCollections()
 
   const canDelete = useMemo(() => recipe?.author_type === 'personal', [recipe?.author_type])
 
@@ -30,10 +32,6 @@ export default function RecipeDetailPage() {
     await toggleFavorite(recipe.id)
   }
 
-  async function onToggleOfflineSaved() {
-    if (!recipe) return
-    await toggleOfflineSaved(recipe)
-  }
 
   return (
     <div className="flex flex-col h-full">
@@ -73,7 +71,7 @@ export default function RecipeDetailPage() {
               <div className="card-body p-4 text-sm space-y-2">
                 <p>
                   <span className="font-semibold">Chemical format:</span>{' '}
-                  <span className="capitalize">{recipe.chemical_format ?? '-'}</span>
+                  <span>{toTitleCase(recipe.chemical_format) || '-'}</span>
                 </p>
                 <p>
                   <span className="font-semibold">Visibility:</span>{' '}
@@ -104,22 +102,13 @@ export default function RecipeDetailPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button
-                className={`btn ${isFavorite(recipe.id) ? 'btn-outline' : 'btn-primary'}`}
-                onClick={() => void onToggleFavourite()}
-                disabled={mutating}
-              >
-                {isFavorite(recipe.id) ? 'Remove favourite' : 'Add favourite'}
-              </button>
-              <button
-                className={`btn ${isOfflineSaved(recipe.id) ? 'btn-outline' : 'btn-primary'}`}
-                onClick={() => void onToggleOfflineSaved()}
-                disabled={mutating}
-              >
-                {isOfflineSaved(recipe.id) ? 'Remove offline saved' : 'Save for offline'}
-              </button>
-            </div>
+            <button
+              className={`btn w-full ${isFavorite(recipe.id) ? 'btn-warning btn-outline' : 'btn-primary'}`}
+              onClick={() => void onToggleFavourite()}
+              disabled={mutating}
+            >
+              {isFavorite(recipe.id) ? '★ Remove from favourites' : '☆ Add to favourites'}
+            </button>
           </>
         )}
       </div>

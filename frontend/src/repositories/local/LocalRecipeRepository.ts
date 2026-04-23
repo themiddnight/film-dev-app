@@ -2,10 +2,10 @@
 // Local recipe repository: system recipes + personal localStorage recipes.
 // Phase 3: swap out for ApiRecipeRepository without touching any component
 
-import type { RecipeRepository } from '../RecipeRepository'
-import type { Recipe } from '../../types/recipe'
-import type { RecipeFilter, RecipeStepType } from '../../types/recipe'
-import { systemRecipes } from '../../data/systemRecipes'
+import type { RecipeRepository } from '@/repositories/RecipeRepository'
+import type { Recipe } from '@/types/recipe'
+import type { RecipeFilter, RecipeStepType } from '@/types/recipe'
+import { systemRecipes } from '@/data'
 
 const RECIPES_KEY = 'recipes'
 

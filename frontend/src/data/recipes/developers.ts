@@ -1,21 +1,7 @@
-import type { Recipe } from '../types/recipe'
+import type { Recipe } from '@/types/recipe'
+import { withRecipeDefaults, systemCreated } from './helpers'
 
-const now = '2026-04-14T00:00:00.000Z'
-
-function withRecipeDefaults(recipe: Partial<Recipe> & Pick<Recipe, 'id' | 'name' | 'description'>): Recipe {
-  return {
-    author: { id: 'system', name: 'Film Dev Guidance' },
-    visibility: 'published',
-    tags: [],
-    film_types: ['any'],
-    base_volume_ml: 1000,
-    baths: [],
-    develop_steps: [],
-    ...recipe,
-  }
-}
-
-export const systemRecipes: Recipe[] = [
+export const developerRecipes: Recipe[] = [
   withRecipeDefaults({
     id: 'rodinal-1-50',
     slug: 'rodinal-1-50',
@@ -63,8 +49,8 @@ export const systemRecipes: Recipe[] = [
     visibility: 'published',
     status: 'published',
     tags: ['rodinal', 'developer', 'one-shot'],
-    created_at: now,
-    updated_at: now,
+    created_at: systemCreated,
+    updated_at: systemCreated,
   }),
   withRecipeDefaults({
     id: 'hc110-b',
@@ -104,8 +90,8 @@ export const systemRecipes: Recipe[] = [
     visibility: 'published',
     status: 'published',
     tags: ['hc-110', 'developer', 'one-shot'],
-    created_at: now,
-    updated_at: now,
+    created_at: systemCreated,
+    updated_at: systemCreated,
   }),
   withRecipeDefaults({
     id: 'd76-stock',
@@ -157,65 +143,8 @@ export const systemRecipes: Recipe[] = [
     visibility: 'published',
     status: 'published',
     tags: ['d-76', 'developer', 'reusable'],
-    created_at: now,
-    updated_at: now,
-  }),
-  withRecipeDefaults({
-    id: 'ilfostop-1-19',
-    slug: 'ilfostop-1-19',
-    name: 'Ilfostop 1+19',
-    description: 'Acid stop bath for film processing.',
-    step_type: 'stop',
-    film_compatibility: { scope: 'general' },
-    chemical_format: 'liquid_concentrate',
-    dilution: {
-      type: 'fixed',
-      concentrate_parts: 1,
-      water_parts: 19,
-      label: '1+19',
-    },
-    develop_timing: { type: 'fixed', fixed_seconds: 60 },
-    shelf_life_days: 7,
-    storage: {
-      shelf_life: 'Working solution: up to 1 week',
-      container: 'Sealed bottle',
-    },
-    author_type: 'system',
-    visibility: 'published',
-    status: 'published',
-    tags: ['stop'],
-    created_at: now,
-    updated_at: now,
-  }),
-  withRecipeDefaults({
-    id: 'ilford-rapid-fixer-1-4',
-    slug: 'ilford-rapid-fixer-1-4',
-    name: 'Ilford Rapid Fixer 1+4',
-    description: 'General-purpose film fixer.',
-    step_type: 'fixer',
-    film_compatibility: { scope: 'general' },
-    chemical_format: 'liquid_concentrate',
-    dilution: {
-      type: 'fixed',
-      concentrate_parts: 1,
-      water_parts: 4,
-      label: '1+4',
-    },
-    constraints: {
-      fixer_grade: 'film',
-    },
-    develop_timing: { type: 'fixed', fixed_seconds: 240 },
-    shelf_life_days: 60,
-    storage: {
-      shelf_life: 'Working solution: 1-2 months',
-      container: 'Tightly capped bottle',
-    },
-    author_type: 'system',
-    visibility: 'published',
-    status: 'published',
-    tags: ['fixer'],
-    created_at: now,
-    updated_at: now,
+    created_at: systemCreated,
+    updated_at: systemCreated,
   }),
   withRecipeDefaults({
     id: 'thornton-2bath',
@@ -272,7 +201,7 @@ export const systemRecipes: Recipe[] = [
         ],
         n_variations: {
           'N-1': { chemicals: [{ name: 'Sodium Metaborate (Kodalk)', amount_per_liter: 9, unit: 'g', order: 1 }] },
-          'N':   { chemicals: [{ name: 'Sodium Metaborate (Kodalk)', amount_per_liter: 12, unit: 'g', order: 1 }] },
+          'N': { chemicals: [{ name: 'Sodium Metaborate (Kodalk)', amount_per_liter: 12, unit: 'g', order: 1 }] },
           'N+1': { chemicals: [{ name: 'Sodium Metaborate (Kodalk)', amount_per_liter: 15, unit: 'g', order: 1 }] },
         },
         shelf_life_days: 60,
@@ -331,7 +260,123 @@ export const systemRecipes: Recipe[] = [
     author_type: 'system',
     visibility: 'published',
     status: 'published',
-    created_at: now,
-    updated_at: now,
+    created_at: systemCreated,
+    updated_at: systemCreated,
+  }),
+  withRecipeDefaults({
+    id: 'divided-d76',
+    slug: 'divided-d76',
+    name: 'Divided D-76 (2-Bath)',
+    description: 'Two-bath compensating developer based on D-76. Bath A saturates the emulsion; Bath B activates development. Highlights self-limit giving excellent shadow/highlight separation. Very forgiving of temperature variations.',
+    step_type: 'developer',
+    film_compatibility: {
+      scope: 'general',
+    },
+    chemical_format: 'powder_raw',
+    chemicals: [
+      { name: 'Metol', amount_per_liter: 7, unit: 'g', order: 1 },
+      { name: 'Sodium Sulfite (anhydrous)', amount_per_liter: 100, unit: 'g', order: 2 },
+      { name: 'Borax', amount_per_liter: 10, unit: 'g', order: 3 },
+    ],
+    mixing_steps: [
+      { instruction: 'Bath A: Dissolve Metol in 750ml warm water (~50°C), then add Sodium Sulfite. Top up to 1L.' },
+      { instruction: 'Bath B: Dissolve Borax in 1L water at room temperature. Stir until fully dissolved.' },
+      { instruction: '⚠ Do NOT rinse between Bath A and Bath B during development.' },
+      { instruction: 'Process: Immerse in Bath A for 3–4 min, then transfer directly to Bath B for 3 min.' },
+    ],
+    baths: [
+      {
+        id: 'divided-d76-a',
+        name: 'Bath A — Developer',
+        role: 'developer',
+        developer_bath_role: 'bath_a',
+        chemical_format: 'powder_raw',
+        mixing_required: true,
+        chemicals: [
+          { name: 'Metol', amount_per_liter: 7, unit: 'g', order: 1 },
+          { name: 'Sodium Sulfite (anhydrous)', amount_per_liter: 100, unit: 'g', order: 2 },
+        ],
+        shelf_life_days: 180,
+        storage: {
+          shelf_life: 'Several months in airtight container',
+          container: 'Dark glass bottle, tightly sealed',
+        },
+      },
+      {
+        id: 'divided-d76-b',
+        name: 'Bath B — Alkaline Accelerator',
+        role: 'developer',
+        developer_bath_role: 'bath_b',
+        chemical_format: 'powder_raw',
+        mixing_required: true,
+        chemicals: [
+          { name: 'Borax', amount_per_liter: 10, unit: 'g', order: 1 },
+        ],
+        n_variations: {
+          'N-1': { chemicals: [{ name: 'Borax', amount_per_liter: 7, unit: 'g', order: 1 }] },
+          'N': { chemicals: [{ name: 'Borax', amount_per_liter: 10, unit: 'g', order: 1 }] },
+          'N+1': { chemicals: [{ name: 'Borax', amount_per_liter: 13, unit: 'g', order: 1 }] },
+        },
+        shelf_life_days: 90,
+        storage: {
+          shelf_life: '2–3 months',
+          container: 'Dark glass bottle, tightly sealed',
+          notes: 'Replace after ~20 rolls.',
+        },
+      },
+    ],
+    develop_steps: [
+      {
+        id: 'divided-d76-step-a',
+        name: 'Bath A — Saturation',
+        type: 'developer',
+        duration_seconds: 210,
+        bath_ref: 'divided-d76-a',
+        agitation: {
+          initial_seconds: 30,
+          interval_seconds: 60,
+          duration_seconds: 5,
+        },
+        warnings: ['Agitate first 30s then 5s each minute.'],
+      },
+      {
+        id: 'divided-d76-step-b',
+        name: 'Bath B — Activation',
+        type: 'activator',
+        duration_seconds: 180,
+        bath_ref: 'divided-d76-b',
+        agitation: {
+          initial_seconds: 5,
+          interval_seconds: 60,
+          duration_seconds: 5,
+        },
+        warnings: [
+          'Gentle agitation only — development self-limits via exhaustion.',
+          'Extending time in Bath B beyond 3 min has little effect on contrast.',
+        ],
+      },
+    ],
+    optimal_temp: { min: 18, max: 24 },
+    constraints: {
+      required_fixer_type: 'standard',
+      is_two_bath: true,
+      reuse_compensation: {
+        max_rolls: 20,
+        time_increase_per_roll: 0,
+        notes: 'Bath A reusable many times. Bath B: replace after ~20 rolls. Times are constant — no adjustment needed.',
+      },
+    },
+    film_types: ['hp5', 'fp4', 'tri-x', 'delta-100', 'delta-400', 't-max-100', 'kentmere-400', 'fomapan-400'],
+    tags: ['d-76', '2-bath', 'divided', 'developer', 'compensating', 'temperature-tolerant'],
+    storage: {
+      shelf_life: 'Bath A: 6+ months. Bath B: 2–3 months.',
+      container: 'Dark glass bottles, tightly sealed',
+      notes: 'Times are largely independent of temperature (18–24°C). Not suitable for pushing film.',
+    },
+    author_type: 'system',
+    visibility: 'published',
+    status: 'published',
+    created_at: systemCreated,
+    updated_at: systemCreated,
   }),
 ]
