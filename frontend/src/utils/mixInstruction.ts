@@ -6,7 +6,7 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100
 }
 
-function scaleToTarget(amountPerLiter: number, targetVolumeMl: number): number {
+export function scaleToTarget(amountPerLiter: number, targetVolumeMl: number): number {
   return round2((amountPerLiter * targetVolumeMl) / 1000)
 }
 
@@ -34,7 +34,7 @@ function findChemicalAmountTokenValue(
   return `${scaleToTarget(chemical.amount_per_liter, targetVolumeMl)} ${chemical.unit}`
 }
 
-function getDilutionVolumes(targetVolumeMl: number, dilution?: DilutionOption): { concentrateMl: number; waterMl: number } | null {
+export function getDilutionVolumes(targetVolumeMl: number, dilution?: DilutionOption): { concentrateMl: number; waterMl: number } | null {
   if (!dilution) return null
   const totalParts = dilution.concentrate_parts + dilution.water_parts
   if (totalParts <= 0) return null

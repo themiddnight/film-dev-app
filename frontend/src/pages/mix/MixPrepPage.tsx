@@ -4,14 +4,15 @@ import Navbar from '@/components/Navbar'
 import ConfirmLeaveModal from '@/components/ConfirmLeaveModal'
 import { useRecipes } from '@/hooks/useRecipes'
 import { useMixingStore } from '@/store/mixingStore'
-import { formatScaledChemicalText } from '@/utils/mixInstruction'
+import { getDilutionVolumes, scaleToTarget } from '@/utils/mixInstruction'
 import { getChemicalsForSelection, isTwoBathRecipe } from '@/utils/twoBath'
+import type { Recipe, DilutionOption } from '@/types/recipe'
 import { useShallow } from 'zustand/react/shallow'
 
 export default function MixPrepPage() {
   const navigate = useNavigate()
   const [showLeaveModal, setShowLeaveModal] = useState(false)
-  const { selectedRecipeIds, checkedMap, toggleChecked, twoBathSelections, twoBathNLevels, targetVolumeMl } = useMixingStore(
+  const { selectedRecipeIds, checkedMap, toggleChecked, twoBathSelections, twoBathNLevels, targetVolumeMl, selectedDilutions } = useMixingStore(
     useShallow((s) => ({
       selectedRecipeIds: s.selectedRecipeIds,
       checkedMap: s.checkedMap,
@@ -19,22 +20,55 @@ export default function MixPrepPage() {
       twoBathSelections: s.twoBathSelections,
       twoBathNLevels: s.twoBathNLevels,
       targetVolumeMl: s.targetVolumeMl,
+      selectedDilutions: s.selectedDilutions,
     }))
   )
   const { recipes } = useRecipes({})
 
   const selected = useMemo(() => recipes.filter((recipe) => selectedRecipeIds.includes(recipe.id)), [recipes, selectedRecipeIds])
 
+  const getPrepChemicals = useMemo(() => {
+    return (recipe: Recipe) => {
+      const selection = twoBathSelections[recipe.id] ?? 'both'
+      const baseChemicals = getChemicalsForSelection(recipe, selection, twoBathNLevels[recipe.id])
+      
+      if (baseChemicals.length === 0 && recipe.chemical_format === 'liquid_concentrate' && recipe.dilution) {
+        let dilutionOption: DilutionOption | undefined = selectedDilutions[recipe.id]
+        if (!dilutionOption) {
+          if (recipe.dilution.type === 'fixed') {
+            dilutionOption = { concentrate_parts: recipe.dilution.concentrate_parts, water_parts: recipe.dilution.water_parts }
+          } else if (recipe.dilution.type === 'preset') {
+            dilutionOption = recipe.dilution.options[0]
+          } else if (recipe.dilution.type === 'open') {
+            dilutionOption = recipe.dilution.suggested_ratios[0]
+          }
+        }
+        
+        const volumes = getDilutionVolumes(targetVolumeMl, dilutionOption)
+        if (volumes && volumes.concentrateMl > 0) {
+          return [{ name: `${recipe.name} Concentrate`, amountText: `${volumes.concentrateMl} ml` }]
+        }
+      }
+
+      return baseChemicals.map(c => {
+        const scaled = scaleToTarget(c.amount_per_liter, targetVolumeMl)
+        return { 
+          name: c.name, 
+          amountText: `${scaled} ${c.unit} (from ${c.amount_per_liter} ${c.unit}/L @ ${targetVolumeMl} ml)` 
+        }
+      })
+    }
+  }, [twoBathSelections, twoBathNLevels, selectedDilutions, targetVolumeMl])
+
   // Count total chemicals to prepare
   const totalChemicals = useMemo(() => {
     return selected.reduce((sum, recipe) => {
-      const selection = twoBathSelections[recipe.id] ?? 'both'
-      return sum + getChemicalsForSelection(recipe, selection, twoBathNLevels[recipe.id]).length
+      return sum + getPrepChemicals(recipe).length
     }, 0)
-  }, [selected, twoBathSelections, twoBathNLevels])
+  }, [selected, getPrepChemicals])
 
   const checkedCount = useMemo(() => Object.values(checkedMap).filter(Boolean).length, [checkedMap])
-  const chemicalsPrepared = totalChemicals > 0 && checkedCount >= totalChemicals
+  const chemicalsPrepared = totalChemicals === 0 || checkedCount >= totalChemicals
 
   return (
     <div className="flex flex-col h-full">
@@ -71,16 +105,14 @@ export default function MixPrepPage() {
               )}
 
               {(() => {
-                const selection = twoBathSelections[recipe.id] ?? 'both'
-                const chemicals = getChemicalsForSelection(recipe, selection, twoBathNLevels[recipe.id])
+                const chemicals = getPrepChemicals(recipe)
                 return chemicals.length > 0
               })() ? (
                 <div className="mt-3 pt-3 border-t border-base-300 space-y-2">
                   {(() => {
-                    const selection = twoBathSelections[recipe.id] ?? 'both'
-                    const chemicals = getChemicalsForSelection(recipe, selection, twoBathNLevels[recipe.id])
+                    const chemicals = getPrepChemicals(recipe)
                     return chemicals.map((chem, index) => {
-                    const key = `${recipe.id}-chem-${chem.name}-${index}`
+                    const key = `${recipe.id}-chem-${chem.name.replace(/\s+/g, '-')}-${index}`
                     return (
                       <label key={key} className="flex items-start gap-2">
                         <input
@@ -90,7 +122,7 @@ export default function MixPrepPage() {
                           onChange={() => toggleChecked(key)}
                         />
                         <span className="text-sm">
-                          {chem.name}: {formatScaledChemicalText(chem.amount_per_liter, chem.unit, targetVolumeMl)}
+                          {chem.name}: {chem.amountText}
                         </span>
                       </label>
                     )
@@ -108,10 +140,10 @@ export default function MixPrepPage() {
       <div className="p-4 border-t border-base-300">
         <button 
           className="btn btn-primary w-full" 
-          disabled={!chemicalsPrepared || totalChemicals === 0}
+          disabled={!chemicalsPrepared}
           onClick={() => navigate('/mix/mix')}
         >
-          Continue to Mix
+          {totalChemicals === 0 ? "Skip to Mix" : "Continue to Mix"}
         </button>
       </div>
 

@@ -16,6 +16,10 @@ export const stopRecipes: Recipe[] = [
       water_parts: 19,
       label: '1+19',
     },
+    mixing_steps: [
+      { instruction: 'Measure {dilution_water} of water at target temperature ({target_volume} total target).' },
+      { instruction: 'Add {dilution_concentrate} of concentrate to the water and stir gently.' },
+    ],
     develop_timing: { type: 'fixed', fixed_seconds: 60 },
     shelf_life_days: 7,
     storage: {

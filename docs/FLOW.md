@@ -272,11 +272,18 @@ Inventory page (`/inventory`)
 
 ```
 Kits page (`/kits`)
- ├─ แสดง: kit ทั้งหมด
- │ warning badge ถ้า item ใดใน kit expired/exhausted
- ├─ [+ สร้าง Kit ใหม่]
- └─ แตะ kit → Kit detail
- [แก้ไข], [ลบ]
+ ├─ My Kits tab
+ │ แสดง: kit ทั้งหมดที่ user สร้างหรือ clone มา
+ │ warning badge ถ้า item ใดใน kit expired/exhausted หรือขาดน้ำยา
+ │ [+ สร้าง Kit ใหม่]
+ │ แตะ kit → Kit detail
+ │  [แก้ไข], [ลบ]
+ │  ถ้า slots ยังไม่เชื่อมขวดจริง (มีแต่ intended_recipe_id):
+ │    [เตรียมน้ำยาที่ขาด] → Shortcut ไป Mix page (Flow 2) พร้อม pre-select recipes ที่ต้องผสม
+ └─ Community Guides tab
+   แสดง: Kit templates ที่แนะนำจาก community (ไม่มีขวดจริง)
+   แตะ guide → [Clone เป็น My Kit]
+   → กลายเป็น Kit ในช่อง My Kits ที่มี intended_recipe_id ชี้ไปยังสูตรต่างๆ ทำหน้าที่เหมือน To-Do list
 ```
 
 ### Flow: Create Kit

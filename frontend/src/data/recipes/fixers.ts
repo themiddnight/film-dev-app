@@ -16,6 +16,10 @@ export const fixerRecipes: Recipe[] = [
       water_parts: 4,
       label: '1+4',
     },
+    mixing_steps: [
+      { instruction: 'Measure {dilution_water} of water at target temperature ({target_volume} total target).' },
+      { instruction: 'Add {dilution_concentrate} of concentrate to the water and stir gently.' },
+    ],
     constraints: {
       fixer_grade: 'film',
     },
@@ -77,6 +81,10 @@ export const fixerRecipes: Recipe[] = [
       water_parts: 4,
       label: '1+4',
     },
+    mixing_steps: [
+      { instruction: 'Measure {dilution_water} of water at target temperature ({target_volume} total target).' },
+      { instruction: 'Add {dilution_concentrate} of concentrate to the water and stir gently.' },
+    ],
     develop_timing: { type: 'fixed', fixed_seconds: 180 },
     optimal_temp: { min: 20, max: 24 },
     storage: {

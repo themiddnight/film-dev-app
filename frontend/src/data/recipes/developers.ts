@@ -18,6 +18,10 @@ export const developerRecipes: Recipe[] = [
         { label: '1+100', concentrate_parts: 1, water_parts: 100 },
       ],
     },
+    mixing_steps: [
+      { instruction: 'Measure {dilution_water} of water at target temperature ({target_volume} total target).' },
+      { instruction: 'Add {dilution_concentrate} of concentrate to the water and stir gently.' },
+    ],
     base_volume_ml: 1000,
     optimal_temp: { min: 20, max: 24 },
     develop_timing: {
@@ -66,6 +70,10 @@ export const developerRecipes: Recipe[] = [
       water_parts: 31,
       label: 'Dilution B',
     },
+    mixing_steps: [
+      { instruction: 'Measure {dilution_water} of water at target temperature ({target_volume} total target).' },
+      { instruction: 'Add {dilution_concentrate} of concentrate to the water and stir gently.' },
+    ],
     base_volume_ml: 1000,
     optimal_temp: { min: 20, max: 24 },
     develop_timing: {

@@ -354,7 +354,8 @@ type KitSlot = {
  id: string // uuid
  slot_type: KitSlotType // ประเภทของ slot
  developer_slot_role?: 'bath_a' | 'bath_b' // ใช้เมื่อ slot_type = 'developer' และเป็น two-bath
- inventory_item_id: string | null // FK → InventoryItem — null ถ้ายังไม่เลือก
+ inventory_item_id: string | null // FK → InventoryItem — null ถ้ายังไม่เลือก (ขวดจริง)
+ intended_recipe_id?: string // สูตรเป้าหมายที่ตั้งใจจะใช้ (ใช้เป็น To-Do list กรณีที่ยังไม่ได้ผสมขวดนี้)
  order: number // ลำดับ step ใน kit (0-based)
  optional: boolean // wash_aid, wetting_agent เป็น optional
  notes?: string // เช่น "water stop fallback"

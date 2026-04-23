@@ -10,6 +10,9 @@ import type { InventoryItem } from '@/types/inventory'
 import type { DeveloperBathRole } from '@/types/inventory'
 import type { Kit, KitSlot, KitSlotType } from '@/types/kit'
 import type { Recipe, RecipeStepType } from '@/types/recipe'
+import { SYSTEM_KIT_GUIDES } from '@/data/kitGuides'
+import type { KitGuide } from '@/types/kit'
+import { useMixingStore } from '@/store/mixingStore'
 
 const STEP_TYPES: Array<'all' | RecipeStepType> = ['all', 'developer', 'stop', 'fixer', 'wash_aid', 'wetting_agent']
 
@@ -189,6 +192,9 @@ export default function KitsPage() {
   const [editingItem, setEditingItem] = useState<ItemForm | null>(null)
   const [selectedInventoryId, setSelectedInventoryId] = useState<string | null>(null)
   const [draftKit, setDraftKit] = useState<DraftKit | null>(null)
+  const [activeTab, setActiveTab] = useState<'personal' | 'guides'>('personal')
+  const [cloningGuide, setCloningGuide] = useState<string | null>(null)
+  const setMixSelected = useMixingStore((s) => s.setSelectedRecipeIds)
 
   const filter = useMemo(
     () => ({
@@ -338,6 +344,43 @@ export default function KitsPage() {
     setDraftKit(null)
   }
 
+  async function cloneKitGuide(guide: KitGuide) {
+    if (cloningGuide) return
+    setCloningGuide(guide.id)
+
+    try {
+      const now = new Date().toISOString()
+      const newSlots: KitSlot[] = []
+      
+      for (let i = 0; i < guide.slots.length; i++) {
+        const slot = guide.slots[i]
+        newSlots.push({
+          id: crypto.randomUUID(),
+          slot_type: slot.slot_type,
+          developer_slot_role: slot.developer_slot_role,
+          inventory_item_id: null,
+          intended_recipe_id: slot.recipe_id,
+          order: i,
+          optional: false,
+        })
+      }
+
+      // Create personal kit
+      await saveKit({
+        id: crypto.randomUUID(),
+        name: `My ${guide.name}`,
+        description: guide.description,
+        slots: newSlots,
+        created_at: now,
+        updated_at: now,
+      })
+
+      setActiveTab('personal')
+    } finally {
+      setCloningGuide(null)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       <Navbar
@@ -348,8 +391,29 @@ export default function KitsPage() {
         left={<Package size={18} className="text-sub" />}
       />
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
-        <section className="space-y-3">
+      <div className="flex bg-base-200 p-1 m-4 rounded-lg">
+        <button
+          className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-colors ${
+            activeTab === 'personal' ? 'bg-base-100 shadow-sm text-base-content' : 'text-sub hover:text-base-content'
+          }`}
+          onClick={() => setActiveTab('personal')}
+        >
+          My Inventory & Kits
+        </button>
+        <button
+          className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-colors ${
+            activeTab === 'guides' ? 'bg-base-100 shadow-sm text-base-content' : 'text-sub hover:text-base-content'
+          }`}
+          onClick={() => setActiveTab('guides')}
+        >
+          Community Guides
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-6">
+        {activeTab === 'personal' ? (
+          <>
+            <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-xs uppercase tracking-wide text-sub">Inventory bottles</h2>
             <button className="btn btn-primary btn-xs" onClick={openCreateInventory}>
@@ -506,7 +570,7 @@ export default function KitsPage() {
 
                   <div className="mt-2 flex flex-wrap gap-1">
                     {kit.slots
-                      .filter((slot) => slot.slot_type === 'developer' && slot.developer_slot_role)
+                      .filter((slot) => slot.slot_type === 'developer' && slot.developer_slot_role && slot.inventory_item_id)
                       .map((slot) => (
                         <span
                           key={slot.id}
@@ -516,11 +580,93 @@ export default function KitsPage() {
                         </span>
                       ))}
                   </div>
+
+                  {kit.slots.filter((s) => !s.inventory_item_id && s.intended_recipe_id).length > 0 && (
+                    <div className="mt-3 space-y-1.5 border-t border-base-300 pt-3">
+                      <p className="text-xs font-semibold text-warning tracking-wide uppercase">Missing Recipes</p>
+                      {kit.slots
+                        .filter((s) => !s.inventory_item_id && s.intended_recipe_id)
+                        .map((slot) => {
+                          const recipe = recipeById.get(slot.intended_recipe_id!)
+                          const roleLabel = slot.slot_type === 'developer' && slot.developer_slot_role
+                            ? ` (${slot.developer_slot_role.replace('_', ' ').toUpperCase()})`
+                            : ''
+                          return (
+                            <div key={slot.id} className="flex items-center justify-between text-xs bg-base-100 p-2 rounded-md">
+                              <span className="truncate text-sub">
+                                <span className="capitalize font-medium text-base-content">{slot.slot_type}</span>: {recipe?.name || slot.intended_recipe_id}{roleLabel}
+                              </span>
+                              <button
+                                className="btn btn-xs btn-primary btn-outline"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setMixSelected([slot.intended_recipe_id!])
+                                  navigate(`/mix/summary`)
+                                }}
+                              >
+                                Mix Now
+                              </button>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
         </section>
+        </>
+        ) : (
+          <section className="space-y-4">
+            <div className="text-sm text-sub text-center mb-6">
+              Clone a community guide to automatically set up the required inventory bottles and create a personal kit.
+            </div>
+            <div className="space-y-3">
+              {SYSTEM_KIT_GUIDES.map(guide => (
+                <div key={guide.id} className="card bg-base-200">
+                  <div className="card-body p-4 space-y-3">
+                    <div>
+                      <h3 className="font-semibold">{guide.name}</h3>
+                      <p className="text-xs text-sub mt-1">{guide.description}</p>
+                    </div>
+
+                    <div className="space-y-1 mt-2">
+                      <p className="text-xs font-medium uppercase text-sub tracking-wide">Included Recipes</p>
+                      <ul className="text-sm space-y-1 text-base-content/90">
+                        {guide.slots.map((slot, idx) => {
+                          const recipe = recipeById.get(slot.recipe_id)
+                          const roleLabel = slot.slot_type === 'developer' && slot.developer_slot_role 
+                            ? ` (${slot.developer_slot_role.replace('_', ' ').toUpperCase()})` 
+                            : ''
+                          return (
+                            <li key={idx} className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-primary/40 shrink-0" />
+                              <span className="capitalize text-xs opacity-60 w-16">{slot.slot_type}</span>
+                              <span className="truncate">{recipe?.name || slot.recipe_id}{roleLabel}</span>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </div>
+
+                    <button 
+                      className="btn btn-primary w-full mt-2"
+                      onClick={() => void cloneKitGuide(guide)}
+                      disabled={cloningGuide === guide.id}
+                    >
+                      {cloningGuide === guide.id ? (
+                        <span className="loading loading-spinner loading-sm"></span>
+                      ) : (
+                        <><Plus size={16} /> Clone to My Kits</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {editingItem && (

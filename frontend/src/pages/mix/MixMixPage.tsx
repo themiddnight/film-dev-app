@@ -41,7 +41,7 @@ export default function MixMixPage() {
   }, [selected, twoBathSelections])
 
   const checkedCount = useMemo(() => Object.values(checkedMap).filter(Boolean).length, [checkedMap])
-  const allMixed = totalSteps > 0 && checkedCount >= totalSteps
+  const allMixed = totalSteps === 0 || checkedCount >= totalSteps
 
   return (
     <div className="flex flex-col h-full">
@@ -120,10 +120,10 @@ export default function MixMixPage() {
       <div className="p-4 border-t border-base-300">
         <button 
           className="btn btn-primary w-full" 
-          disabled={!allMixed || totalSteps === 0}
+          disabled={!allMixed}
           onClick={() => navigate('/mix/done')}
         >
-          Continue to Inventory
+          {totalSteps === 0 ? "Skip to Inventory" : "Continue to Inventory"}
         </button>
       </div>
 

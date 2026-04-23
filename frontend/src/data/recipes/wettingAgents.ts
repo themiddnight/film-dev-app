@@ -16,6 +16,10 @@ export const wettingAgentRecipes: Recipe[] = [
       water_parts: 200,
       label: '1+200',
     },
+    mixing_steps: [
+      { instruction: 'Measure {dilution_water} of water at target temperature ({target_volume} total target).' },
+      { instruction: 'Add {dilution_concentrate} of concentrate to the water and stir gently.' },
+    ],
     develop_timing: { type: 'fixed', fixed_seconds: 60 },
     shelf_life_days: 730,
     storage: {
@@ -65,6 +69,10 @@ export const wettingAgentRecipes: Recipe[] = [
         { label: '1 drop per 500ml', concentrate_parts: 1, water_parts: 500 },
       ],
     },
+    mixing_steps: [
+      { instruction: 'Measure {dilution_water} of water at target temperature ({target_volume} total target).' },
+      { instruction: 'Add {dilution_concentrate} of concentrate to the water and stir gently.' },
+    ],
     develop_timing: { type: 'fixed', fixed_seconds: 60 },
     storage: {
       shelf_life: 'Working solution: discard after use',
